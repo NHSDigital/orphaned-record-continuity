@@ -1,9 +1,10 @@
 package uk.nhs.prm.repo.ehrtransferservice.gp2gp_message_models;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(callSuper=true)
 public class Gp2gpMessengerPositiveAcknowledgementRequestBody extends Gp2gpMessengerAcknowledgementRequestBody{
     public Gp2gpMessengerPositiveAcknowledgementRequestBody(
             String repositoryAsid,

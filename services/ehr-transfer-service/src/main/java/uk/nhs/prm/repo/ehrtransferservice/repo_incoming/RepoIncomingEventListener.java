@@ -7,10 +7,10 @@ import uk.nhs.prm.repo.ehrtransferservice.exceptions.ConversationIneligibleForRe
 import uk.nhs.prm.repo.ehrtransferservice.exceptions.acknowledgement.EhrCompleteAcknowledgementFailedException;
 import uk.nhs.prm.repo.ehrtransferservice.logging.Tracer;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.TextMessage;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.MessageListener;
+import jakarta.jms.TextMessage;
 
 @Slf4j
 @RequiredArgsConstructor

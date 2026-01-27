@@ -1,12 +1,12 @@
 package uk.nhs.prm.repo.ehrtransferservice.logging;
 
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.context.annotation.Configuration;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
 
 import static uk.nhs.prm.repo.ehrtransferservice.logging.TraceKey.CONVERSATION_ID;
 import static uk.nhs.prm.repo.ehrtransferservice.logging.TraceKey.TRACE_ID;

@@ -26,8 +26,8 @@ import uk.nhs.prm.repo.ehrtransferservice.repo_incoming.RepoIncomingEventListene
 import uk.nhs.prm.repo.ehrtransferservice.repo_incoming.RepoIncomingEventParser;
 import uk.nhs.prm.repo.ehrtransferservice.repo_incoming.RepoIncomingService;
 
-import javax.jms.JMSException;
-import javax.jms.Session;
+import jakarta.jms.JMSException;
+import jakarta.jms.Session;
 
 @Configuration
 @RequiredArgsConstructor

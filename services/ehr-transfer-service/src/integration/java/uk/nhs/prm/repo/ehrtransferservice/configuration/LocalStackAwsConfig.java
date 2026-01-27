@@ -46,7 +46,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static javax.jms.Session.CLIENT_ACKNOWLEDGE;
+import static jakarta.jms.Session.CLIENT_ACKNOWLEDGE;
 import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.TransferTableAttribute.*;
 
 @TestConfiguration

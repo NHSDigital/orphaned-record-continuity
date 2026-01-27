@@ -1,11 +1,11 @@
 package uk.nhs.prm.repo.ehrtransferservice.message_publishers;
 
-import com.amazonaws.services.sns.model.MessageAttributeValue;
-import com.amazonaws.services.sns.model.PublishRequest;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
 import software.amazon.sns.AmazonSNSExtendedClient;
 import uk.nhs.prm.repo.ehrtransferservice.logging.Tracer;
 

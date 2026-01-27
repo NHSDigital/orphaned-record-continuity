@@ -7,34 +7,9 @@ set -Eeo pipefail
 ###########################
 
 AWS_DEFAULT_REGION=eu-west-2
-IMAGE_REPO_NAME=deductions/ehr-transfer-service
 export NHS_SERVICE=ehr-transfer-service
 AWS_HELPERS_VERSION=0.2.27
 echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
-
-###########################
-# Shared utils            #
-###########################
-
-function download_util() {
-  local UTIL_VERSION=$1
-  local UTIL_FILENAME=$2
-
-  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
-
-  mkdir -p "utils/$UTIL_VERSION"
-  if [[ ! -f $UTIL_FILEPATH ]];then
-    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
-  fi
-  chmod +x $UTIL_FILEPATH
-
-  echo "$UTIL_FILEPATH"
-}
-
-function fetch_redaction_utils() {
-  download_util $AWS_HELPERS_VERSION run-with-redaction.sh
-  download_util $AWS_HELPERS_VERSION redactor
-}
 
 # Do not change the file name as the aws helper scripts depend on it
 AWS_HELPERS_FILE="utils/$AWS_HELPERS_VERSION/aws-helpers"
@@ -54,14 +29,6 @@ function check_env {
   if [[ -z "${NHS_ENVIRONMENT}" ]]; then
     echo "Must set NHS_ENVIRONMENT"
     exit 1
-  fi
-}
-
-function set_image_tag() {
-  if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
-    export IMAGE_TAG=${GO_PIPELINE_LABEL:-$(git rev-parse HEAD | cut -c 1-8)}
-  else
-    export IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
   fi
 }
 
@@ -86,25 +53,29 @@ function configure_sonar_environment_variable {
   export SONAR_TOKEN=$(_get_aws_ssm_secret "/repo/dev/output/ehr-transfer-service/sonar_token")
 }
 
+#############
+# FUNCTIONS #
+#############
+function start_localstack {
+  echo "################################"
+  echo "##### Starting Localstack ######"
+  echo "################################"
+  docker compose -f docker-compose.localstack-local.yaml up -d
+}
+
+function stop_localstack {
+  echo "################################"
+  echo "##### Stopping Localstack ######"
+  echo "################################"
+  docker compose -f docker-compose.localstack-local.yaml down
+}
+
 ###########
 ## TASKS ##
 ###########
 
 command="$1"
 case "${command}" in
-  assemble_docker)
-      configure_local_envs
-      ./tasks assemble
-      configure_docker_repository_uri
-      fetch_redaction_utils
-      build_docker_image
-      echo "Pushing the Docker image... $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG"
-      docker push $REPOSITORY_URI:$IMAGE_TAG
-      ;;
-  show_image_tag)
-      set_image_tag
-      echo $IMAGE_TAG
-      ;;
   build)
       rm -rf build/
       ./gradlew build -x integration
@@ -118,42 +89,37 @@ case "${command}" in
       ./gradlew test
       ;;
   test_integration)
-#      ensure_prev_build_images_are_stopped
       configure_local_envs
+      start_localstack
       ./gradlew --info integration
-      ;;
-  test_coverage)
-      ensure_prev_build_images_are_stopped
-      configure_local_envs
-      ./gradlew jacocoTestCoverageVerification
-      ;;
-  fetch_utils)
-      fetch_redaction_utils
+      stop_localstack
       ;;
   code_quality)
-      ensure_prev_build_images_are_stopped
       configure_local_envs
+      start_localstack
       ./gradlew check -x test -x integration
+      stop_localstack
       ;;
   test_all)
       configure_local_envs
+      start_localstack
       ./gradlew test integration jacocoTestCoverageVerification check
+      stop_localstack
       ;;
   run_sonar)
-      ensure_prev_build_images_are_stopped
       _assume_environment_role $NHS_ENVIRONMENT
       configure_local_envs
       configure_sonar_environment_variable
+      start_localstack
       ./gradlew build sonar --info
+      stop_localstack
       ;;
-  run_localstack_local)
+  start_localstack)
       configure_local_envs
-      docker compose -f docker-compose.localstack-local.yaml up -d
+      start_localstack
       ;;
-  promote_docker_image)
-      check_env
-      set_image_tag
-      promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
+  stop_localstack)
+      stop_localstack
       ;;
   wait_ecs)
       check_env

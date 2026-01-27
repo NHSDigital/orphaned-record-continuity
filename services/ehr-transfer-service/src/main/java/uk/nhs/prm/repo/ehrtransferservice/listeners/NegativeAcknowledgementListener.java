@@ -1,15 +1,14 @@
 package uk.nhs.prm.repo.ehrtransferservice.listeners;
 
+import jakarta.jms.Message;
+import jakarta.jms.MessageListener;
+import jakarta.jms.TextMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import uk.nhs.prm.repo.ehrtransferservice.logging.Tracer;
 import uk.nhs.prm.repo.ehrtransferservice.handlers.NegativeAcknowledgementHandler;
 import uk.nhs.prm.repo.ehrtransferservice.models.ack.Acknowledgement;
 import uk.nhs.prm.repo.ehrtransferservice.parsers.Parser;
-
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.TextMessage;
 
 @Slf4j
 @RequiredArgsConstructor
