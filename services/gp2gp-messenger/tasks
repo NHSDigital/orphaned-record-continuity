@@ -165,6 +165,10 @@ case "${command}" in
       npm install
       npm run test:integration
       ;;
+  test_coverage_github_action)
+      npm install
+      npm run test:coverage-unit-test-only
+      ;;
   sanity_check)
       configure_domain_infix
       check_env

@@ -9,6 +9,7 @@
     "lint": "eslint src/ scripts/",
     "lint:fix": "npm run lint -- --fix",
     "test": "npm run lint:fix && npm run test:unit && npm run test:integration",
+    "test:coverage-unit-test-only": "jest  \"src/(?!(.*\\integration.test\\.js))\" --maxWorkers=1 --coverage --detectOpenHandles --forceExit --setupFiles dotenv/config",
     "test:unit": "jest \"src/(?!(.*\\integration.test\\.js))\" --setupFiles --detectOpenHandles dotenv/config",
     "test:integration": "jest \"src/.*\\integration.test\\.js\" --detectOpenHandles --forceExit --setupFiles dotenv/config",
     "test:functional": "jest test/functional/*",
