@@ -6,7 +6,7 @@ The stored the EHR is composed of the messages sent from its previous holder in 
 
 ## Prerequisites
 
-- [Node](https://nodejs.org/en/download/package-manager/#nvm) - version 22.x
+- [Node](https://nodejs.org/en/download/package-manager/#nvm) - version 24.x
 - [Docker](https://docs.docker.com/install/)
 
 ## Set up

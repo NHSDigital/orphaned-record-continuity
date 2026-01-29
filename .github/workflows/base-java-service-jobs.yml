@@ -116,6 +116,24 @@ jobs:
           set -euo pipefail
           docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
 
+      - name: Generate SBOM for Docker Image
+        uses: anchore/sbom-action@v0
+        if: ${{ inputs.environment == 'development' }}
+        with:
+          image: ${{ steps.ecr-login.outputs.registry }}/${{ inputs.image_prefix }}${{ inputs.service }}:${{ github.sha }}
+          format: cyclonedx-json
+          output-file: sbom-image-${{ github.event.repository.name }}--${{ github.sha }}.cdx.json
+
+      - name: Scan SBOM for Docker Image
+        uses: anchore/scan-action@v7
+        if: ${{ inputs.environment == 'development' }}
+        with:
+          sbom: sbom-image-${{ github.event.repository.name }}--${{ github.sha }}.cdx.json
+          fail-build: true
+          severity-cutoff: low
+          only-fixed: true
+          output-format: table
+
   deploy_infra:
     name: Deploy Infrastructure
     needs: [build_and_publish]

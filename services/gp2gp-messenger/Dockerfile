@@ -1,4 +1,9 @@
-FROM node:22.5-alpine AS builder
+FROM node:24-alpine3.23 AS builder
+
+RUN apk update && \
+    apk -u list && \
+    apk upgrade && \
+    rm -rf /var/cache/apk/*
 
 COPY package*.json /app/
 
@@ -8,7 +13,7 @@ RUN npm install
 RUN npm ci --only=production
 
 # production app image
-FROM alpine:3.15
+FROM alpine:3.23
 
 # take just node without npm (including npx) or yarn
 COPY --from=builder /usr/local/bin/node /usr/local/bin
@@ -17,12 +22,7 @@ COPY --from=builder /usr/local/bin/node /usr/local/bin
 COPY --from=builder /app /app
 
 RUN apk update && apk add openssl ca-certificates git && rm -rf /var/cache/apk/*
-RUN apk add --no-cache \
-        python3 \
-        py3-pip \
-    && pip3 install --upgrade pip \
-    && pip3 install \
-        awscli \
+RUN apk add --no-cache aws-cli \
     && rm -rf /var/cache/apk/*
 
 

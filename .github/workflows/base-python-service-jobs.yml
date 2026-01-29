@@ -98,6 +98,24 @@ jobs:
         run: |
           docker push "$ECR_URI:$IMAGE_TAG"
 
+      - name: Generate SBOM for Docker Image
+        uses: anchore/sbom-action@v0
+        if: ${{ inputs.environment == 'development' }}
+        with:
+          image: ${{ steps.ecr-repo.outputs.uri }}:${{ github.sha }}
+          format: cyclonedx-json
+          output-file: sbom-image-${{ github.event.repository.name }}--${{ github.sha }}.cdx.json
+
+      - name: Scan SBOM for Docker Image
+        uses: anchore/scan-action@v7
+        if: ${{ inputs.environment == 'development' }}
+        with:
+          sbom: sbom-image-${{ github.event.repository.name }}--${{ github.sha }}.cdx.json
+          fail-build: true
+          severity-cutoff: low
+          only-fixed: true
+          output-format: table
+
   deploy_infra:
     if: ${{ inputs.deploy_infra && inputs.is_deployment }}
     name: Deploy Infrastructure
