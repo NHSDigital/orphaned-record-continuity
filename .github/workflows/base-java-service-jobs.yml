@@ -44,7 +44,7 @@ jobs:
         working-directory: "./services/${{ inputs.service }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up JDK ${{ inputs.java_version }}
         uses: actions/setup-java@v3
@@ -73,7 +73,7 @@ jobs:
         working-directory: "./services/${{ inputs.service }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up JDK ${{ inputs.java_version }}
         uses: actions/setup-java@v3
