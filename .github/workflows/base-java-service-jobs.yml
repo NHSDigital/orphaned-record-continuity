@@ -83,7 +83,7 @@ jobs:
           cache: gradle
 
       - name: Configure AWS Credentials (Read/Write)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.IAM_ROLE }}
           aws-region: ${{ vars.AWS_REGION }}
