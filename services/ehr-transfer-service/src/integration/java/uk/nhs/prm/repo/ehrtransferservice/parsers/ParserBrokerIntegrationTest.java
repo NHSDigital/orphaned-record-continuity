@@ -1,9 +1,9 @@
 package uk.nhs.prm.repo.ehrtransferservice.parsers;
 
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.PurgeQueueRequest;
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ import static uk.nhs.prm.repo.ehrtransferservice.utils.TestDataLoaderUtility.get
 @ContextConfiguration(classes = LocalStackAwsConfig.class)
 public class ParserBrokerIntegrationTest {
     @Autowired
-    private AmazonSQSAsync sqs;
+    private SqsClient sqs;
 
     @Autowired
     private TransferService transferService;

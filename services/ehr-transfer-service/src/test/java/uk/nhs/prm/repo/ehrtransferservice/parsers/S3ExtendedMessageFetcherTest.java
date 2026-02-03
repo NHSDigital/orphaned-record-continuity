@@ -6,6 +6,7 @@ import com.google.common.io.ByteSource;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,7 +26,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -99,8 +99,8 @@ class S3ExtendedMessageFetcherTest {
     private void mockS3GetObjectResponseToReturnContentFrom(String resourceFileName) {
         when(s3Client.getObject(any(GetObjectRequest.class))).then(invocation -> {
             GetObjectRequest getObjectRequest = invocation.getArgument(0);
-            assertEquals("s3-bucket-name", getObjectRequest.bucket());
-            assertEquals("s3-key-value", getObjectRequest.key());
+            Assertions.assertEquals("s3-bucket-name", getObjectRequest.bucket());
+            Assertions.assertEquals("s3-key-value", getObjectRequest.key());
 
             return new ResponseInputStream<>(GetObjectResponse.builder().build(), AbortableInputStream.create(readResourceFile(resourceFileName)));
         });

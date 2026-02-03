@@ -1,7 +1,7 @@
 package uk.nhs.prm.repo.ehrtransferservice.handler;
 
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.model.PurgeQueueRequest;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +38,7 @@ public class NegativeAcknowledgmentHandlingIntegrationTest {
     TransferService transferService;
 
     @Autowired
-    private AmazonSQSAsync sqs;
+    private SqsClient sqs;
 
     @Value("${activemq.inboundQueue}")
     private String inboundQueue;
@@ -91,7 +91,7 @@ public class NegativeAcknowledgmentHandlingIntegrationTest {
     }
 
     private void purgeQueue(String queueName) {
-        final String queueUrl = sqs.getQueueUrl(queueName).getQueueUrl();
+        final String queueUrl = sqs.getQueueUrl.getQueueUrl();
         final PurgeQueueRequest purgeQueueRequest = new PurgeQueueRequest(queueUrl);
 
         sqs.purgeQueue(purgeQueueRequest);
