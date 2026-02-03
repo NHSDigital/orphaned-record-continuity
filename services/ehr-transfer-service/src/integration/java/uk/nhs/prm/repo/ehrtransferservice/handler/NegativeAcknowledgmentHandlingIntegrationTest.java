@@ -91,9 +91,7 @@ public class NegativeAcknowledgmentHandlingIntegrationTest {
     }
 
     private void purgeQueue(String queueName) {
-        final String queueUrl = sqs.getQueueUrl.getQueueUrl();
-        final PurgeQueueRequest purgeQueueRequest = new PurgeQueueRequest(queueUrl);
-
-        sqs.purgeQueue(purgeQueueRequest);
+        final String queueUrl = sqs.getQueueUrl(builder -> builder.queueName(queueName)).queueUrl();
+        sqs.purgeQueue(PurgeQueueRequest.builder().queueUrl(queueUrl).build());
     }
 }

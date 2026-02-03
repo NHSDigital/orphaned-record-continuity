@@ -1,5 +1,8 @@
 package uk.nhs.prm.repo.ehrtransferservice.parsers;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.annotation.DirtiesContext;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest;
@@ -20,9 +23,13 @@ import uk.nhs.prm.repo.ehrtransferservice.configuration.LocalStackAwsConfig;
 import uk.nhs.prm.repo.ehrtransferservice.database.TransferService;
 import uk.nhs.prm.repo.ehrtransferservice.exceptions.ConversationIneligibleForRetryException;
 import uk.nhs.prm.repo.ehrtransferservice.repo_incoming.RepoIncomingEvent;
+import uk.nhs.prm.repo.ehrtransferservice.services.PresignedUrl;
+import uk.nhs.prm.repo.ehrtransferservice.services.ehr_repo.EhrRepoClient;
+import uk.nhs.prm.repo.ehrtransferservice.services.ehr_repo.EhrRepoService;
 import uk.nhs.prm.repo.ehrtransferservice.utils.TransferTrackerDbUtility;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.ConversationTransferStatus.INBOUND_REQUEST_SENT;
 import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.Layer.CONVERSATION;
 import static uk.nhs.prm.repo.ehrtransferservice.utils.TestDataLoaderUtility.getTestDataAsString;
@@ -48,6 +57,9 @@ public class ParserBrokerIntegrationTest {
 
     @Autowired
     TransferTrackerDbUtility transferTrackerDbUtility;
+
+    @MockBean
+    private EhrRepoService ehrRepoService;
 
     @Value("${activemq.inboundQueue}")
     private String inboundQueue;
@@ -76,6 +88,12 @@ public class ParserBrokerIntegrationTest {
     private static final UUID NEMS_MESSAGE_ID = UUID.fromString("ad9246ce-b337-4ba9-973f-e1284e1f79c7");
     private static final String NHS_NUMBER = "9896589658";
 
+    @BeforeEach
+    void configureMocks() throws Exception {
+        purgeQueue(largeMessageFragmentsObservabilityQueueName);
+        purgeQueue(smallEhrObservabilityQueueName);
+    }
+
     @AfterEach
     public void tearDown() {
         purgeQueue(largeMessageFragmentsObservabilityQueueName);
@@ -100,7 +118,7 @@ public class ParserBrokerIntegrationTest {
         final RepoIncomingEvent repoIncomingEvent = createDefaultRepoIncomingEvent(COPC_INBOUND_CONVERSATION_ID);
         final String fragmentMessageBody = getTestDataAsString("large-ehr-fragment-with-ref");
         final SimpleAmqpQueue inboundQueueFromMhs = new SimpleAmqpQueue(inboundQueue);
-        final String fragmentsQueueUrl = sqs.getQueueUrl(largeMessageFragmentsObservabilityQueueName).getQueueUrl();
+        final String fragmentsQueueUrl = getQueueUrl(largeMessageFragmentsObservabilityQueueName);
 
         // when
         try {
@@ -113,10 +131,10 @@ public class ParserBrokerIntegrationTest {
 
         // then
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            var receivedMessageHolder = checkMessageInRelatedQueue(fragmentsQueueUrl);
-            Assertions.assertTrue(receivedMessageHolder.get(0).getBody().contains(fragmentMessageBody));
-            Assertions.assertTrue(receivedMessageHolder.get(0).getMessageAttributes().containsKey("traceId"));
-            Assertions.assertTrue(receivedMessageHolder.get(0).getMessageAttributes().containsKey("conversationId"));
+            List<Message> receivedMessageHolder = checkMessageInRelatedQueue(fragmentsQueueUrl);
+            Assertions.assertTrue(receivedMessageHolder.getFirst().body().contains(fragmentMessageBody));
+            Assertions.assertTrue(receivedMessageHolder.getFirst().messageAttributes().containsKey("traceId"));
+            Assertions.assertTrue(receivedMessageHolder.getFirst().messageAttributes().containsKey("conversationId"));
         });
     }
 
@@ -126,7 +144,7 @@ public class ParserBrokerIntegrationTest {
         final RepoIncomingEvent repoIncomingEvent = createDefaultRepoIncomingEvent(EHR_CORE_INBOUND_CONVERSATION_ID);
         final String ehrCoreMessageBody = getTestDataAsString("small-ehr");
         final SimpleAmqpQueue inboundQueueFromMhs = new SimpleAmqpQueue(inboundQueue);
-        final String smallEhrObservabilityQueueUrl = sqs.getQueueUrl(smallEhrObservabilityQueueName).getQueueUrl();
+        final String smallEhrObservabilityQueueUrl = getQueueUrl(smallEhrObservabilityQueueName);
 
         // when
         try {
@@ -143,10 +161,10 @@ public class ParserBrokerIntegrationTest {
         inboundQueueFromMhs.sendMessage(ehrCoreMessageBody);
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            var receivedMessageHolder = checkMessageInRelatedQueue(smallEhrObservabilityQueueUrl);
-            Assertions.assertTrue(receivedMessageHolder.get(0).getBody().contains(ehrCoreMessageBody));
-            Assertions.assertTrue(receivedMessageHolder.get(0).getMessageAttributes().containsKey("traceId"));
-            Assertions.assertTrue(receivedMessageHolder.get(0).getMessageAttributes().containsKey("conversationId"));
+            List<Message> receivedMessageHolder = checkMessageInRelatedQueue(smallEhrObservabilityQueueUrl);
+            Assertions.assertTrue(receivedMessageHolder.getFirst().body().contains(ehrCoreMessageBody));
+            Assertions.assertTrue(receivedMessageHolder.getFirst().messageAttributes().containsKey("traceId"));
+            Assertions.assertTrue(receivedMessageHolder.getFirst().messageAttributes().containsKey("conversationId"));
         });
     }
 
@@ -156,7 +174,7 @@ public class ParserBrokerIntegrationTest {
         final RepoIncomingEvent repoIncomingEvent = createDefaultRepoIncomingEvent(EHR_CORE_INBOUND_CONVERSATION_ID);
         final String ehrCoreMessageBody = getTestDataAsString("small-ehr");
         final SimpleAmqpQueue inboundQueueFromMhs = new SimpleAmqpQueue(inboundQueue);
-        final String smallEhrObservabilityQueueUrl = sqs.getQueueUrl(smallEhrObservabilityQueueName).getQueueUrl();
+        final String smallEhrObservabilityQueueUrl = getQueueUrl(smallEhrObservabilityQueueName);
         final String correlationId = UUID.randomUUID().toString();
 
         // when
@@ -174,58 +192,66 @@ public class ParserBrokerIntegrationTest {
         inboundQueueFromMhs.sendMessage(ehrCoreMessageBody, correlationId);
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            var receivedMessageHolder = checkMessageInRelatedQueue(smallEhrObservabilityQueueUrl);
-            var message = receivedMessageHolder.get(0);
-            Assertions.assertTrue(message.getBody().contains(ehrCoreMessageBody));
-            Assertions.assertTrue(message.getMessageAttributes().containsKey("traceId"));
-            Assertions.assertEquals(message.getMessageAttributes().get("traceId").getStringValue(), correlationId);
+            List<Message> receivedMessageHolder = checkMessageInRelatedQueue(smallEhrObservabilityQueueUrl);
+            Message message = receivedMessageHolder.getFirst();
+            Assertions.assertTrue(message.body().contains(ehrCoreMessageBody));
+            Assertions.assertTrue(message.messageAttributes().containsKey("traceId"));
+            Assertions.assertEquals(message.messageAttributes().get("traceId").stringValue(), correlationId);
         });
     }
 
     @Test
     void shouldPublishInvalidMessageToDlq() {
-        var wrongMessage = "something wrong";
+        String wrongMessage = "something wrong";
 
-        var inboundQueueFromMhs = new SimpleAmqpQueue(inboundQueue);
+        SimpleAmqpQueue inboundQueueFromMhs = new SimpleAmqpQueue(inboundQueue);
         inboundQueueFromMhs.sendMessage(wrongMessage);
 
-        var parsingDqlQueueUrl = sqs.getQueueUrl(parsingDlqQueueName).getQueueUrl();
+        String parsingDqlQueueUrl = getQueueUrl(parsingDlqQueueName);
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            var receivedMessageHolder = checkMessageInRelatedQueue(parsingDqlQueueUrl);
-            Assertions.assertTrue(receivedMessageHolder.get(0).getBody().contains(wrongMessage));
+            List<Message> receivedMessageHolder = checkMessageInRelatedQueue(parsingDqlQueueUrl);
+            Assertions.assertTrue(receivedMessageHolder.getFirst().body().contains(wrongMessage));
         });
     }
 
     @Test
     void shouldPublishUnprocessableMessageToDlq() {
-        var unprocessableMessage = "NO_ACTION:UNPROCESSABLE_MESSAGE_BODY";
-        var inboundQueueFromMhs = new SimpleAmqpQueue(inboundQueue);
+        String unprocessableMessage = "NO_ACTION:UNPROCESSABLE_MESSAGE_BODY";
+        SimpleAmqpQueue inboundQueueFromMhs = new SimpleAmqpQueue(inboundQueue);
         inboundQueueFromMhs.sendUnprocessableAmqpMessage();
 
-        var parsingDqlQueueUrl = sqs.getQueueUrl(parsingDlqQueueName).getQueueUrl();
+        String parsingDqlQueueUrl = getQueueUrl(parsingDlqQueueName);
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            var receivedMessageHolder = checkMessageInRelatedQueue(parsingDqlQueueUrl);
-            Assertions.assertTrue(receivedMessageHolder.get(0).getBody().contains(unprocessableMessage));
+            List<Message> receivedMessageHolder = checkMessageInRelatedQueue(parsingDqlQueueUrl);
+            Assertions.assertTrue(receivedMessageHolder.getFirst().body().contains(unprocessableMessage));
         });
     }
 
     private List<Message> checkMessageInRelatedQueue(String queueUrl) {
         System.out.println("checking sqs queue: " + queueUrl);
 
-        var requestForMessagesWithAttributes
-                = new ReceiveMessageRequest().withQueueUrl(queueUrl)
-                .withMessageAttributeNames("All");
-        var messages = sqs.receiveMessage(requestForMessagesWithAttributes).getMessages();
+        ReceiveMessageRequest requestForMessagesWithAttributes = ReceiveMessageRequest.builder()
+                .queueUrl(queueUrl)
+                .messageAttributeNames("All")
+                .build();
+
+        List<Message> messages = sqs.receiveMessage(requestForMessagesWithAttributes).messages();
+
         System.out.println("messages in checkMessageInRelatedQueue: " + messages);
         assertThat(messages).hasSize(1);
         return messages;
     }
 
     private void purgeQueue(String queueName) {
-        var queueUrl = sqs.getQueueUrl(queueName).getQueueUrl();
-        sqs.purgeQueue(new PurgeQueueRequest(queueUrl));
+        String queueUrl = getQueueUrl(queueName);
+        sqs.purgeQueue(PurgeQueueRequest.builder().queueUrl(queueUrl).build());
+
+    }
+    
+    private String getQueueUrl(String queueName) {
+        return sqs.getQueueUrl(builder -> builder.queueName(queueName)).queueUrl();
     }
 
     private RepoIncomingEvent createDefaultRepoIncomingEvent(UUID inboundConversationId) {
