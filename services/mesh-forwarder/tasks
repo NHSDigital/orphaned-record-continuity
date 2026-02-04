@@ -10,38 +10,6 @@ AWS_DEFAULT_REGION=eu-west-2
 IMAGE_REPO_NAME=deductions/mesh-forwarder
 export NHS_SERVICE=mesh-forwarder
 
-AWS_HELPERS_VERSION=0.2.27
-echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
-
-
-###########################
-# Shared utils            #
-###########################
-
-function download_util() {
-  local UTIL_VERSION=$1
-  local UTIL_FILENAME=$2
-
-  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
-
-  mkdir -p "utils/$UTIL_VERSION"
-  if [[ ! -f $UTIL_FILEPATH ]];then
-    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
-  fi
-  chmod +x $UTIL_FILEPATH
-
-  echo "$UTIL_FILEPATH"
-}
-
-function fetch_redaction_utils() {
-  download_util $AWS_HELPERS_VERSION run-with-redaction.sh
-  download_util $AWS_HELPERS_VERSION redactor
-}
-
-AWS_HELPERS_FILE=$(download_util $AWS_HELPERS_VERSION aws-helpers)
-source $AWS_HELPERS_FILE
-
-
 ####################################
 # Instance (Environment) Variables #
 ####################################
@@ -143,10 +111,6 @@ function setup_venv {
   source "${venv_directory}"/bin/activate
 }
 
-function get_aws_account_id() {
-  AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
-}
-
 function generate_mesh_fqdn() {
     if [[ "${NHS_ENVIRONMENT}" == prod ]]; then
       if [ -z $MESH_MAILBOX_ID  ]; then
@@ -157,19 +121,6 @@ function generate_mesh_fqdn() {
     else
       export MESH_FQDN="nems-non-prod-$NHS_ENVIRONMENT.$ODS_CODE.api.mesh-client.nhs.uk"
     fi
-}
-
-function build_forwarder_image() {
-  fetch_redaction_utils
-  docker build --build-arg SOURCE_IMAGE_TAG=$SOURCE_IMAGE_TAG \
-               --build-arg UTILS_VERSION=$AWS_HELPERS_VERSION \
-               -t "$IMAGE_REPO_NAME:${IMAGE_TAG}" .
-}
-
-function push_forwarder_image_to_repo_ecr() {
-  IMAGE_FULL_URL="${REPOSITORY_URI}:${IMAGE_TAG}"
-  docker tag "$IMAGE_REPO_NAME:${IMAGE_TAG}" "$IMAGE_FULL_URL"
-  docker push "$IMAGE_FULL_URL"
 }
 
 function generate_csr {
@@ -300,11 +251,6 @@ case "${command}" in
     set_nems_env
     python3 print_delete_subscription.py
     ;;
-  promote_docker_image)
-    check_env
-    set_image_tag
-    promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
-    ;;
   venv)
     setup_venv
     ;;
@@ -315,13 +261,6 @@ case "${command}" in
       --region $AWS_DEFAULT_REGION \
       --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
       --services $NHS_ENVIRONMENT-mesh-forwarder-service
-    ;;
-  fetch_utils)
-    fetch_redaction_utils
-    ;;
-  build_docker)
-    set_image_tag
-    build_forwarder_image
     ;;
   push_forwarder_image_to_repo_ecr)
     if [ -z $SOURCE_IMAGE_TAG ]; then
