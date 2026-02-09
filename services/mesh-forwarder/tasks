@@ -105,10 +105,9 @@ function set_cert_issuer() {
 }
 
 function setup_venv {
-  venv_directory=venv
-  echo "Using this directory for venv: ${venv_directory}"
-  python3 -m venv "${venv_directory}"
-  source "${venv_directory}"/bin/activate
+  echo "Creating Dev Virtual Environment"
+  pip3 install pipenv
+  pipenv shell
 }
 
 function generate_mesh_fqdn() {
