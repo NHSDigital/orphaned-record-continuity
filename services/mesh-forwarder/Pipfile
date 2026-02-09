@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 mesh-inbox-s3-forwarder = {editable = true, path = "."}
+urllib3 = "*"
 
 [dev-packages]
 werkzeug = "~=3.1.5"
