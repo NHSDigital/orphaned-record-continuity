@@ -30,7 +30,7 @@ describe('app', () => {
       request(app)
         .get('/swagger/index.html')
         .expect(200)
-        .expect('Content-Type', 'text/html; charset=UTF-8')
+        .expect('Content-Type', 'text/html; charset=utf-8')
         .end(done);
     });
   });

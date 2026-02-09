@@ -1,6 +1,6 @@
 const SQS_EHR_OUT_INCOMING_QUEUE_NAME = 'test-ehr-out-service-incoming';
 const AWS_ACCOUNT_NO = '000000000000';
-let localstackEndpointUrl = process.env.LOCALSTACK_URL;
+let localstackEndpointUrl = process.env.LOCALSTACK_URL || 'http://localhost:4566';
 export const config = {
   nhsEnvironment: process.env.NHS_ENVIRONMENT,
   serviceUrl: process.env.SERVICE_URL,

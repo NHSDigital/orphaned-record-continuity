@@ -21,7 +21,7 @@ const INBOUND_FRAGMENT_IDS = [uuid().toUpperCase(), uuid().toUpperCase(), uuid()
 const ODS_CODE = 'B12345';
 
 describe('ehr-core-repository', () => {
-  afterAll(async () => {
+  afterEach(async () => {
     await cleanupRecordsForTest(INBOUND_CONVERSATION_ID);
   });
 

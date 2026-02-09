@@ -39,7 +39,7 @@ describe('outbound-conversation-repository', () => {
   const ODS_CODE = 'B12345';
   const db = EhrTransferTracker.getInstance();
 
-  afterAll(async () => {
+  afterEach(async () => {
     await cleanupRecordsForTest(INBOUND_CONVERSATION_ID);
   });
 
