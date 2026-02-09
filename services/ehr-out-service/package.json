@@ -31,7 +31,6 @@
     "expect": "^29.3.1",
     "express": "^4.19.2",
     "express-validator": "^6.14.0",
-    "fast-xml-parser": "^4.2.5",
     "lodash.chunk": "^4.2.0",
     "lodash.clonedeep": "^4.5.0",
     "lodash.isequal": "^4.5.0",
@@ -67,6 +66,7 @@
   },
   "overrides": {
     "json5": "2.2.2",
+    "fast-xml-parser": "^5.3.5",
     "superagent": "8.0.8",
     "semver": ">=7.5.2"
   },
