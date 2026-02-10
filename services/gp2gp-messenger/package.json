@@ -22,10 +22,6 @@
     "start:local": "babel-node -r dotenv/config src/server.js",
     "start:nodemon": "nodemon --exec babel-node -r dotenv/config src/server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nhsconnect/prm-deductions-gp2gp-messenger.git"
-  },
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.470.0",
     "@babel/runtime": "^7.17.8",
