@@ -77,7 +77,7 @@ Compile the code with `npm run build`, and then start the server with `npm start
 
 ## Config
 
-Ensure you have VPN connection set up to both `dev` and `test` environments ([see this Confluence page](https://gpitbjss.atlassian.net/wiki/spaces/TW/pages/1832779966/VPN+for+Deductions+Services)).
+Ensure you have a VPN connection set up to the `dev` environment ([see this Confluence page](https://gpitbjss.atlassian.net/wiki/spaces/TW/pages/1832779966/VPN+for+Deductions+Services)).
 
 ## Access to AWS from CLI
 
