@@ -1,8 +1,8 @@
 package uk.nhs.prm.repo.ehrtransferservice.parsers;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest;
@@ -58,7 +58,7 @@ public class ParserBrokerIntegrationTest {
     @Autowired
     TransferTrackerDbUtility transferTrackerDbUtility;
 
-    @MockBean
+    @MockitoBean
     private EhrRepoService ehrRepoService;
 
     @Value("${activemq.inboundQueue}")
