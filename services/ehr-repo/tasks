@@ -101,7 +101,7 @@ function destroy_localstack {
   kill_container publish=4566 localstack
   kill_container publish=4573 dynamodb-local
 }
-function run_localstack {
+function start_localstack {
   docker-compose -f docker-compose.localstack-local.yaml up -d
 }
 
@@ -138,7 +138,7 @@ case "${command}" in
       npm run test:unit
       configure_local_envs
       destroy_localstack
-      run_localstack
+      start_localstack
       sh scripts/create-bucket.sh
       sh scripts/create-dynamodb-table.sh
       npm run test:integration
@@ -162,8 +162,8 @@ case "${command}" in
       nslookup "ehr-repo.${DOMAIN_INFIX}.patient-deductions.nhs.uk"
       curl -i --fail "https://ehr-repo.${DOMAIN_INFIX}.patient-deductions.nhs.uk/health"
       ;;
-  run_localstack_local)
-    run_localstack
+  start_localstack)
+    start_localstack
     ;;
   destroy_localstack)
     destroy_localstack
