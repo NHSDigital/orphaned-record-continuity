@@ -8,18 +8,6 @@ set -Eeo pipefail
 
 AWS_DEFAULT_REGION=eu-west-2
 export NHS_SERVICE=ehr-transfer-service
-AWS_HELPERS_VERSION=0.2.27
-echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
-
-# Do not change the file name as the aws helper scripts depend on it
-AWS_HELPERS_FILE="utils/$AWS_HELPERS_VERSION/aws-helpers"
-
-mkdir -p "utils/$AWS_HELPERS_VERSION"
-if [[ ! -f $AWS_HELPERS_FILE ]];then
-  wget --quiet -O $AWS_HELPERS_FILE https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${AWS_HELPERS_VERSION}/aws-helpers
-fi
-chmod +x $AWS_HELPERS_FILE
-source $AWS_HELPERS_FILE
 
 ####################################
 # Instance (Environment) Variables #
