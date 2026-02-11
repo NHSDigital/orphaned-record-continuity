@@ -62,8 +62,8 @@ function generate_secure_string {
 function configure_local_envs {
   export GP2GP_MESSENGER_AUTHORIZATION_KEYS="auth-key-1"
   export EHR_REPO_AUTHORIZATION_KEYS="auth-key-2"
-  export GP2GP_MESSENGER_SERVICE_URL="www.notreal.com"
-  export EHR_REPO_SERVICE_URL="www.alsonotreal.com"
+  export GP2GP_MESSENGER_SERVICE_URL="http://localhost:3001"
+  export EHR_REPO_SERVICE_URL="http://localhost:3002"
   export LOCALSTACK_URL="http://localstack:4566"
   export REPOSITORY_URI="deductions/ehr-out-service"
   export DYNAMODB_NAME="local-test-db"

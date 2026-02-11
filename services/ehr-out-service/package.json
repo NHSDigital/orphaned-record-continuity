@@ -26,7 +26,7 @@
     "@aws-sdk/client-sqs": "^3.441.0",
     "@aws-sdk/lib-dynamodb": "^3.529.1",
     "@babel/runtime": "^7.17.8",
-    "axios": "^1.13.2",
+    "axios": "^1.13.5",
     "dotenv": "^16.0.0",
     "expect": "^29.3.1",
     "express": "^5.2.1",
