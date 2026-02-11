@@ -1,4 +1,9 @@
-FROM node:22.5-alpine AS builder
+FROM node:24-alpine3.23 AS builder
+
+RUN apk update && \
+    apk -u list && \
+    apk upgrade && \
+    rm -rf /var/cache/apk/*
 
 COPY package*.json /app/
 
@@ -7,7 +12,7 @@ WORKDIR /app
 RUN npm ci --omit=dev
 
 # production app image
-FROM alpine:3.17
+FROM alpine:3.23
 
 # take just node without npm (including npx) or yarn
 COPY --from=builder /usr/local/bin/node /usr/local/bin
@@ -17,17 +22,14 @@ COPY --from=builder /app /app
 
 # install python native requirements (again, as per builder)
 # add root CA from deductions team to trusted certificates
-RUN apk update && \
-    apk add --no-cache openssl ca-certificates bash tini && \
-    rm -rf /var/cache/apk/*
 
-RUN apk add --no-cache \
-        python3 \
-        py3-pip \
-    && pip3 install --upgrade pip \
-    && pip3 install \
-        awscli \
-    && rm -rf /var/cache/apk/*
+# TODO PRM-225 - Rip out Tini, hasn't been updated since 2020
+
+RUN apk update && \
+    apk -u list && \
+    apk upgrade &&  \
+    apk add --no-cache openssl ca-certificates bash tini aws-cli && \
+    rm -rf /var/cache/apk/*
 
 COPY build/                   /app/build
 
