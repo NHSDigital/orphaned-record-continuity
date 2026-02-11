@@ -185,12 +185,12 @@ case "${command}" in
       prepare_local_envs_for_ide
       ;;
   test_integration)
-      destroy_localstack
       configure_local_envs
-      start_localstack_itest
+      start_localstack
       npm install
       sh scripts/create-dynamodb-table.sh
       npm run test:integration
+      destroy_localstack
       ;;
   start_localstack)
       start_localstack
@@ -201,10 +201,11 @@ case "${command}" in
       ;;
   test_coverage)
       configure_local_envs
-      destroy_localstack
+      start_localstack
       npm install
       sh scripts/create-dynamodb-table.sh
       npm run test:coverage
+      destroy_localstack
       ;;
   test_coverage_github_action)
       npm install

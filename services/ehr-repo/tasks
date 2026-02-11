@@ -137,11 +137,11 @@ case "${command}" in
       npm run lint
       npm run test:unit
       configure_local_envs
-      destroy_localstack
       start_localstack
       sh scripts/create-bucket.sh
       sh scripts/create-dynamodb-table.sh
       npm run test:integration
+      destroy_localstack
       ;;
   test_coverage)
       npm install
