@@ -137,7 +137,7 @@ jobs:
   deploy_infra:
     name: Deploy Infrastructure
     needs: [build_and_publish]
-    uses: nhsconnect/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@t667
+    uses: nhsconnect/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@v3
 
     with:
       stack: ${{ inputs.service }}

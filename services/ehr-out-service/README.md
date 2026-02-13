@@ -15,14 +15,6 @@ Follow the links to download
 - [Node](https://nodejs.org/en/download/package-manager/#nvm) - version 14.x
 - [Docker](https://docs.docker.com/install/)
 
-## Directories
-
-| Directory         | Description                                       |
-| :---------------- |:--------------------------------------------------|
-| /src              | The source code                                   |
-| /terraform        | The relative terraform lives in the infra repo.   |
-| /scripts          | Useful scripts (e.g. for sending canary messages) |
-
 ## Starting the app locally
 
 1. Run `npm install` to install all node dependencies.
@@ -63,14 +55,6 @@ Run `./tasks test_integration` to run integration tests.
 
 Runs the coverage tests (unit test and integration test) and collects coverage metrics.
 Run `./tasks test_coverage` to run coverage tests.
-
-### Local Docker tests
-
-Run `./tasks test_docker_local`. Make sure you have followed the steps to start the app in production mode beforehand.
-
-### Functional tests
-
-Run `./tasks test_functional`. This will run the end to end tests within [./test/functional](./test/functional). (Note you may need to be connected to VPN).
 
 ## Pre-commit Checks
 

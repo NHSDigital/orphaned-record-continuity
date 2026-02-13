@@ -120,7 +120,7 @@ jobs:
     if: ${{ inputs.deploy_infra && inputs.is_deployment }}
     name: Deploy Infrastructure
     needs: [build-and-publish-service]
-    uses: nhsconnect/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@t667
+    uses: nhsconnect/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@v3
     with:
       stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}
