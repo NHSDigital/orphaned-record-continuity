@@ -36,10 +36,10 @@ jobs:
         working-directory: "./services/${{ inputs.service }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.9
       - name: Run Unit tests
@@ -54,16 +54,16 @@ jobs:
       run:
         working-directory: ./services/${{ inputs.service }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.9
 
       - name: Configure AWS credentials
         id: auth
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           mask-aws-account-id: true
           role-to-assume: ${{ secrets.IAM_ROLE }}
@@ -120,7 +120,7 @@ jobs:
     if: ${{ inputs.deploy_infra && inputs.is_deployment }}
     name: Deploy Infrastructure
     needs: [build-and-publish-service]
-    uses: nhsconnect/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@v3
+    uses: NHSDigital/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@v3
     with:
       stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}

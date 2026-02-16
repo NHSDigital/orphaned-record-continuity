@@ -72,10 +72,6 @@
     "json5": "2.2.2",
     "semver": ">=7.5.2"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nhsconnect/prm-repo-ehr-out-service.git"
-  },
   "jest": {
     "resetModules": true,
     "clearMocks": true,

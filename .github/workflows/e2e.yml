@@ -18,12 +18,12 @@ jobs:
 
     steps:
       - name: Checkout End to End
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: "nhsconnect/prm-repo-e2e-tests"
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "adopt"
           java-version: "21"
