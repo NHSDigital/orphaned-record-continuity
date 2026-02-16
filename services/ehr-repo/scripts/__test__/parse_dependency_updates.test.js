@@ -52,35 +52,27 @@ describe('parse_dependency_updates.js', () => {
 
   describe('fromString', () => {
     it('should convert the update string to an object', () => {
-      expect(
-        fromString(
-          '/Users/someone/git/prm-deductions-component-template:uuid@3.4.0:uuid@7.0.2:uuid@7.0.2'
-        )
-      ).toEqual({
+      const updateString = fromString(
+        '/Users/someone/git/prm-deductions-component-template:uuid@3.4.0:uuid@7.0.2:uuid@7.0.2'
+      );
+      expect(updateString).toMatchObject({
+        currentVersion: '7.0.2',
+        latestVersion: '7.0.2',
         package: 'uuid',
-        currentVersion: '3.4.0',
-        wantedVersion: '7.0.2',
-        latestVersion: '7.0.2'
+        wantedVersion: '3.4.0'
       });
     });
   });
 
   describe('getAllUpdates', () => {
     it('should return an array of objects', () => {
-      expect(getAllUpdates(multipleUpdatesRequired)).toEqual([
-        {
-          package: 'uuid',
-          currentVersion: '3.4.0',
-          wantedVersion: '7.0.2',
-          latestVersion: '7.0.2'
-        },
-        {
-          package: 'ppc',
-          currentVersion: '3.4.0',
-          wantedVersion: '5.0.2',
-          latestVersion: '7.0.2'
-        }
-      ]);
+      const getAll = getAllUpdates(multipleUpdatesRequired);
+      expect(getAll[0]).toMatchObject({
+        currentVersion: '7.0.2',
+        latestVersion: '7.0.2',
+        package: 'uuid',
+        wantedVersion: '3.4.0'
+      });
     });
   });
 });

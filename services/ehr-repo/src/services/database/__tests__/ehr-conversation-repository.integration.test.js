@@ -225,7 +225,7 @@ describe('ehr-conversation-repository', () => {
       // when
       await expect(() => getCurrentConversationIdForPatient(nhsNumber))
         // then
-        .rejects.toThrowError(HealthRecordNotFoundError);
+        .rejects.toThrow(HealthRecordNotFoundError);
     });
 
     it('should throw an error when cannot find any health record', async () => {
@@ -235,7 +235,7 @@ describe('ehr-conversation-repository', () => {
       // when
       await expect(() => getCurrentConversationIdForPatient(nhsNumber))
         // then
-        .rejects.toThrowError(HealthRecordNotFoundError);
+        .rejects.toThrow(HealthRecordNotFoundError);
     });
   });
 
@@ -247,7 +247,7 @@ describe('ehr-conversation-repository', () => {
       // when
       await expect(() => getMessageIdsForConversation(conversationId))
         // then
-        .rejects.toThrowError(CoreNotFoundError);
+        .rejects.toThrow(CoreNotFoundError);
     });
 
     it('should return health record extract message id given a conversation id for a small health record', async () => {
@@ -257,9 +257,8 @@ describe('ehr-conversation-repository', () => {
       await createCore({ conversationId, messageId, fragmentMessageIds: [] });
 
       // when
-      const { coreMessageId, fragmentMessageIds } = await getMessageIdsForConversation(
-        conversationId
-      );
+      const { coreMessageId, fragmentMessageIds } =
+        await getMessageIdsForConversation(conversationId);
 
       // then
       expect(coreMessageId).toEqual(messageId);
@@ -276,9 +275,8 @@ describe('ehr-conversation-repository', () => {
       await markFragmentAsReceived(fragmentMessageId, conversationId);
 
       // when
-      const { coreMessageId, fragmentMessageIds } = await getMessageIdsForConversation(
-        conversationId
-      );
+      const { coreMessageId, fragmentMessageIds } =
+        await getMessageIdsForConversation(conversationId);
 
       // then
       expect(coreMessageId).toEqual(messageId);
@@ -299,9 +297,8 @@ describe('ehr-conversation-repository', () => {
       await markFragmentAsReceived(nestedFragmentId, conversationId);
 
       // when
-      const { coreMessageId, fragmentMessageIds } = await getMessageIdsForConversation(
-        conversationId
-      );
+      const { coreMessageId, fragmentMessageIds } =
+        await getMessageIdsForConversation(conversationId);
 
       // then
       expect(coreMessageId).toEqual(messageId);

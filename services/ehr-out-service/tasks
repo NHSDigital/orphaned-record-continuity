@@ -18,30 +18,6 @@ GIT_REPO_NAME=prm-repo-ehr-out-service
 export OLD_SERVICE=repo-to-gp
 export NHS_SERVICE=ehr-out-service
 
-AWS_HELPERS_VERSION=0.2.27
-echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
-
-###########################
-# Shared utils            #
-###########################
-
-function download_util() {
-  local UTIL_VERSION=$1
-  local UTIL_FILENAME=$2
-
-  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
-
-  mkdir -p "utils/$UTIL_VERSION"
-  if [[ ! -f $UTIL_FILEPATH ]];then
-    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
-  fi
-  chmod +x $UTIL_FILEPATH
-
-  echo "$UTIL_FILEPATH"
-}
-
-AWS_HELPERS_FILE=$(download_util $AWS_HELPERS_VERSION aws-helpers)
-source $AWS_HELPERS_FILE
 
 ####################################
 # Instance (Environment) Variables #
@@ -50,13 +26,6 @@ source $AWS_HELPERS_FILE
 function check_env {
   if [[ -z "${NHS_ENVIRONMENT}" ]]; then
     echo "Must set NHS_ENVIRONMENT"
-    exit 1
-  fi
-}
-
-function check_nhs_service {
-  if [[ -z "${NHS_SERVICE}" ]]; then
-    echo "Must set NHS_SERVICE"
     exit 1
   fi
 }
@@ -93,8 +62,8 @@ function generate_secure_string {
 function configure_local_envs {
   export GP2GP_MESSENGER_AUTHORIZATION_KEYS="auth-key-1"
   export EHR_REPO_AUTHORIZATION_KEYS="auth-key-2"
-  export GP2GP_MESSENGER_SERVICE_URL="www.notreal.com"
-  export EHR_REPO_SERVICE_URL="www.alsonotreal.com"
+  export GP2GP_MESSENGER_SERVICE_URL="http://localhost:3001"
+  export EHR_REPO_SERVICE_URL="http://localhost:3002"
   export LOCALSTACK_URL="http://localstack:4566"
   export REPOSITORY_URI="deductions/ehr-out-service"
   export DYNAMODB_NAME="local-test-db"
@@ -124,31 +93,15 @@ function configure_local_envs_for_docker_test {
   set_image_tag
 }
 
-function get_aws_account_id {
-    AWS_ACCOUNT_ID=$(dojo -c Dojofile-infra "aws sts get-caller-identity | jq -r .Account")
-}
-
 ############################
 # Docker Related Functions #
 ############################
 
-function docker_login {
-  echo Logging in to Amazon ECR...
-  eval $(dojo -c Dojofile-infra "aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION")
-}
 
 function configure_docker_repository_uri {
   docker_login
   get_aws_account_id
   export REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/$IMAGE_REPO_NAME
-}
-
-function build_docker_image() {
-  echo Build started on $(date)
-  set_image_tag
-  echo Building the Docker image...
-  docker build --build-arg UTILS_VERSION=$AWS_HELPERS_VERSION -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$IMAGE_TAG .
-  echo Build completed on `date`
 }
 
 function kill_container {
@@ -173,86 +126,11 @@ function destroy_localstack {
   kill_container publish=4566 localstack
   kill_container publish=4573 dynamodb-local
 }
-function run_localstack {
+function start_localstack {
   docker-compose -f docker-compose.localstack-local.yaml up -d
 }
-function run_localstack_itest {
+function start_localstack_itest {
   docker-compose -f docker-compose-itest.yml up -d
-}
-#######################
-# Terraform Functions #
-#######################
-
-export TF_BUCKET="prm-deductions-${NHS_ENVIRONMENT}-terraform-state"
-function tf_init_with_options {
-  local state_key=$1
-  local tf_options=$2
-
-  terraform init $tf_options \
-    -backend-config key="${state_key}" \
-    -backend-config bucket="${TF_BUCKET}" \
-    -backend-config dynamodb_table="prm-deductions-${NHS_ENVIRONMENT}-terraform-table" \
-    -backend-config region=${AWS_DEFAULT_REGION}
-}
-
-function tf_init_or_rename {
-  local state_key_suffix=$1
-
-  echo checking state file exists
-  set +e
-  aws s3 ls ${TF_BUCKET}/$NHS_SERVICE-${state_key_suffix}
-  local state_file_exists=$?
-  if [ $state_file_exists -ne 0 ]; then
-    echo cannot find state file so assuming rename
-    local RENAME_STATE=true
-  else
-    echo state file exists
-  fi
-  set -e
-
-  if [ -z "${RENAME_STATE}" ]; then
-    tf_init_with_options $NHS_SERVICE-${state_key_suffix} -reconfigure
-  else
-    echo doing one-time renaming of state file
-    if [ -z "${OLD_SERVICE}" ]; then
-      echo OLD_SERVICE needs to be set if RENAME_STATE being used
-      exit 88
-    fi
-    tf_init_with_options $OLD_SERVICE-${state_key_suffix} -reconfigure
-
-    tf_init_with_options $NHS_SERVICE-${state_key_suffix} '-migrate-state -force-copy'
-  fi
-}
-
-
-function tf_init {
-  check_env
-  cd terraform
-
-  tf_init_or_rename ${NHS_ENVIRONMENT}/terraform.tfstate
-}
-
-function tf_plan {
-  operation=$1
-  set_image_tag
-
-  tf_init
-  terraform get # modules
-  if [[ "${operation}" == "create" ]]; then
-    terraform plan -var task_image_tag=$IMAGE_TAG -var-file=$NHS_ENVIRONMENT.tfvars -out="nhs_deployment.tfplan"
-  elif [[ "${operation}" == "destroy" ]]; then
-    terraform plan -var task_image_tag=$IMAGE_TAG -var-file=$NHS_ENVIRONMENT.tfvars -out="nhs_deployment.tfplan" -destroy
-  else
-    echo "Unknown operation (should be create or destroy), got: ${operation}"
-    exit 1
-  fi
-}
-
-function tf_apply {
-  tf_init
-  terraform get # modules
-  terraform apply nhs_deployment.tfplan
-  terraform output -json > tf-out.json
 }
 
 ###########
@@ -283,8 +161,8 @@ case "${command}" in
       npm install
       npm run resolve-audit
       ;;
-  run_localstack_itest)
-      run_localstack_itest
+  start_localstack_itest)
+      start_localstack_itest
       ;;
   list_outdated)
       npm install
@@ -307,15 +185,15 @@ case "${command}" in
       prepare_local_envs_for_ide
       ;;
   test_integration)
-      destroy_localstack
       configure_local_envs
-      run_localstack_itest
+      start_localstack
       npm install
       sh scripts/create-dynamodb-table.sh
       npm run test:integration
+      destroy_localstack
       ;;
-  run_localstack_local)
-      run_localstack
+  start_localstack)
+      start_localstack
       ;;
   test_functional)
       configure_service_url
@@ -323,10 +201,11 @@ case "${command}" in
       ;;
   test_coverage)
       configure_local_envs
-      destroy_localstack
+      start_localstack
       npm install
       sh scripts/create-dynamodb-table.sh
       npm run test:coverage
+      destroy_localstack
       ;;
   test_coverage_github_action)
       npm install
@@ -356,7 +235,7 @@ case "${command}" in
       ;;
   run_docker_local)
       configure_local_envs
-      dojo -c Dojofile-dtest
+      run_docker_local
       ;;
   tf_plan)
       check_env

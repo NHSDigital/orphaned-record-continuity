@@ -42,10 +42,12 @@ export const healthRecordRequests = async (req, res) => {
       return;
     }
 
-    if (!odsCodeInSafeList(
-      practiceOdsCode,
-      requestEhrOnlyForSafeListedOdsCodesToggle,
-      safeListedOdsCodes)
+    if (
+      !odsCodeInSafeList(
+        practiceOdsCode,
+        requestEhrOnlyForSafeListedOdsCodesToggle,
+        safeListedOdsCodes
+      )
     ) {
       const notASafeListedOdsCodeMessage = 'The ODS code provided is not safe listed.';
 
@@ -116,8 +118,6 @@ const odsCodeInSafeList = (
     return true;
   }
 
-  const safelistedOdsCodesUppercased = safeListedOdsCodes
-    .toUpperCase()
-    .split(',');
+  const safelistedOdsCodesUppercased = safeListedOdsCodes.toUpperCase().split(',');
   return safelistedOdsCodesUppercased.includes(practiceOdsCode.toUpperCase());
 };

@@ -78,7 +78,7 @@ case "${command}" in
       configure_local_envs
       ./gradlew bootRun
       ;;
-  run_localstack_local)
+  start_localstack)
       docker-compose -f docker-compose.localstack-local.yaml up -d
       ;;
   *)

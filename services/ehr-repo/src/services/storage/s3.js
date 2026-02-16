@@ -70,8 +70,8 @@ export default class S3Service {
   _get_config() {
     if (config.nhsEnvironment === 'local') {
       return {
-        accessKeyId: 'test-access-key',
-        secretAccessKey: 'test-secret-key',
+        accessKeyId: 'LSIA5678901234567890',
+        secretAccessKey: 'LSIA5678901234567890',
         endpoint: new Endpoint(config.localstackUrl),
         s3ForcePathStyle: true
       };

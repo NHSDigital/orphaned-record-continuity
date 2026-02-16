@@ -11,12 +11,7 @@ The initial version will send health records that are encoded in the HL7 format.
 
 - [Node](https://nodejs.org/en/download/package-manager/#nvm) - version 14.x
 - [Docker](https://docs.docker.com/install/)
-
-### AWS helpers
-
-This repository imports shared AWS helpers from [prm-deductions-support-infra](https://github.com/nhsconnect/prm-deductions-support-infra/).
-They can be found `utils` directory after running any task from `tasks` file.
-
+ 
 ## Set up
 
 If you would like to run the app locally, you need to:
@@ -87,7 +82,3 @@ In order to get sufficient access to work with terraform or AWS CLI, please foll
 and [this how to?](https://gpitbjss.atlassian.net/wiki/spaces/TW/pages/11286020174/How+to+set+up+access+to+AWS+from+CLI)
 
 As a note, this set-up is based on the README of assume-role [tool](https://github.com/remind101/assume-role)
-
-## Assume role with elevated permissions
-
-In order to get sufficient access to work with terraform or AWS CLI, please export secrets from the AWS Access Portal for the environment you are using

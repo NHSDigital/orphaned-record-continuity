@@ -136,8 +136,8 @@ describe('acknowledgement-handler.test.js', () => {
     await acknowledgementMessageHandler(acknowledgementMessage);
 
     // then
-    expect(logInfo).toBeCalledTimes(2);
-    expect(sendDeleteRequestToEhrRepo).toBeCalledTimes(1);
+    expect(logInfo).toHaveBeenCalledTimes(2);
+    expect(sendDeleteRequestToEhrRepo).toHaveBeenCalledTimes(1);
     expect(sendDeleteRequestToEhrRepo.mock.calls[0][0]).toEqual(NHS_NUMBER);
     expect(sendDeleteRequestToEhrRepo.mock.calls[0][1]).toEqual(CONVERSATION_ID);
   });
@@ -161,11 +161,11 @@ describe('acknowledgement-handler.test.js', () => {
     await acknowledgementMessageHandler(acknowledgementMessage);
 
     // then
-    expect(logInfo).toBeCalledTimes(2);
-    expect(logInfo).toBeCalledWith(
+    expect(logInfo).toHaveBeenCalledTimes(2);
+    expect(logInfo).toHaveBeenCalledWith(
       `Negative integration acknowledgement received for Conversation ID ${CONVERSATION_ID}, and NHS number ${NHS_NUMBER}.`
     );
-    expect(logInfo).toBeCalledWith(
+    expect(logInfo).toHaveBeenCalledWith(
       `Sending delete request to ehr out repository for Conversation ID ${CONVERSATION_ID}, and NHS number ${NHS_NUMBER}.`
     );
   });

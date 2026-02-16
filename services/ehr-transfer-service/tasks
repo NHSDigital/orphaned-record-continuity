@@ -146,7 +146,7 @@ case "${command}" in
       configure_sonar_environment_variable
       ./gradlew build sonar --info
       ;;
-  run_localstack_local)
+  start_localstack)
       configure_local_envs
       docker compose -f docker-compose.localstack-local.yaml up -d
       ;;
