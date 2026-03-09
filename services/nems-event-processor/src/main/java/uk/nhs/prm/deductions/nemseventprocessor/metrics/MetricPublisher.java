@@ -14,6 +14,13 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 
+/**
+ * TODO - THIS SHOULD BE REMOVED
+ *  This class is only used to publish health check metrics for the service's connection to CloudWatch.
+ *  We think this is redundant, however, when we've tried to remove health checks from other services, pipelines have
+ *  failed. The health checks are quite deeply rooted in the codebase. For now, we're leaving this in place.
+ */
+
 @Component
 public class MetricPublisher {
     public CloudWatchClient cloudWatchClient;
