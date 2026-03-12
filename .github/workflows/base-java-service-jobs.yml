@@ -138,10 +138,10 @@ jobs:
     name: Deploy Infrastructure
     needs: [build_and_publish]
     uses: NHSDigital/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@v3
-
     with:
       stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
       ecr_alias: ${{ inputs.ecr_alias }}
+      git_ref: refs/tags/v3
     secrets: inherit

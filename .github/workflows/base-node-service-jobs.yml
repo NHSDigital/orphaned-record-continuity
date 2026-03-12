@@ -175,4 +175,5 @@ jobs:
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
       ecr_alias: ${{ inputs.ecr_alias }}
+      git_ref: refs/tags/v3
     secrets: inherit
