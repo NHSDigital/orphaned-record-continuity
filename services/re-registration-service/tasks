@@ -45,6 +45,14 @@ function check_env {
   fi
 }
 
+function set_image_tag() {
+  if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
+    export IMAGE_TAG=${GO_PIPELINE_LABEL:-$(git rev-parse HEAD | cut -c 1-8)}
+  else
+    export IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
+  fi
+}
+
 function get_aws_account_id {
     AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 }
@@ -137,6 +145,39 @@ case "${command}" in
       ;;
   start_localstack)
       docker-compose -f docker-compose.localstack-local.yaml up -d
+      ;;
+  tf)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_init
+      bash
+      ;;
+  tf_plan)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_plan $2
+      ;;
+  tf_apply)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      tf_apply
+      ;;
+  promote_docker_image)
+      check_env
+      set_image_tag
+      promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
+      ;;
+  wait_ecs)
+      check_env
+      _assume_environment_role $NHS_ENVIRONMENT
+      aws ecs wait services-stable \
+        --region $AWS_DEFAULT_REGION \
+        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
+        --service $NHS_ENVIRONMENT-${NHS_SERVICE}
+      ;;
+  *)
+      echo "Invalid command: '${command}'"
+      exit 1
       ;;
 esac
 set +e
