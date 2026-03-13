@@ -1,0 +1,76 @@
+name: "TOOL: Create Release"
+
+run-name: ${{ inputs.tag }}
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. 1.0.0)"
+        type: string
+        required: true
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  create_release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Tag Format
+        run: |
+          if [[ ! "${{ github.event.inputs.tag }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Tag must be in the format X.Y.Z (e.g. 1.0.0)"
+            exit 1
+          fi
+      
+      - name: Configure AWS Credentials
+        id: credentials
+        uses: aws-actions/configure-aws-credentials@v8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
+        with:
+          role-to-assume: ${{ secrets.IAM_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-skip-session-tagging: true
+          mask-aws-account-id: true
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Create Github tag
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github@github.com"
+          git tag ${{ github.event.inputs.tag }}
+          git push origin ${{ github.event.inputs.tag }}
+
+      - name: Full Deployment
+        uses: ./.github/workflows/full-deployment.yml
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Re-tag ECR Images with Release Tag
+        env:
+          IMAGE_SHA: ${{ github.sha }}
+          IMAGE_TAG: ${{ inputs.tag }}
+        run: |
+          repo-list=['deductions/ehr-out-service', 
+                      'deductions/ehr-repo', 
+                      'deductions/ehr-transfer-service', 
+                      'deductions/gp2gp-messenger', 
+                      'deductions/mesh-forwarder', 
+                      'deductions/nems-event-processor', 
+                      'deductions/pds-adaptor', 
+                      'repo/re-registration-service', 
+                      'repo/suspension-service']
+          for repo in "${repo-list[@]}"; do
+            repo=${{ steps.credentials.outputs.aws-account-id }}.dkr.ecr.eu-west-2.amazonaws.com/$repo
+            docker pull $repo:$IMAGE_SHA
+            docker tag $repo:$IMAGE_SHA $repo:$IMAGE_TAG
+            docker push $repo:$IMAGE_TAG
+          done
+
+          
