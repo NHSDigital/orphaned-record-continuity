@@ -1,7 +1,7 @@
 package uk.nhs.prm.deductions.pdsadaptor.client;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
 import net.logstash.logback.marker.RawJsonAppendingMarker;
-import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,8 +13,10 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.UnknownContentTypeException;
 import uk.nhs.prm.deductions.pdsadaptor.client.exceptions.*;
 import uk.nhs.prm.deductions.pdsadaptor.model.pdsresponse.PdsFhirPatient;
+import uk.nhs.prm.deductions.pdsadaptor.testing.TestLogAppender;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,34 +35,37 @@ class PdsFhirExceptionHandlerTest {
     }
 
     @Test
-    public void shouldStructurallyLogTheResponseBodyForAHttp404() {
-        var testLogAppender = addTestLogAppender();
+    public void shouldStructurallyLogTheResponseBodyOnNotFound() {
+        TestLogAppender testLogAppender = addTestLogAppender();
 
-        var responseBody = new HashMap<>() {
+        Map<String, String> responseBody = new HashMap<>() {
             {
-                put("some_code", "yo code");
-                put("some_detail", "hey detail");
+                put("some_code", "example code");
+                put("some_detail", "example detail");
             }
         };
         assertThrows(RuntimeException.class, () ->
                 handler.handleCommonExceptions("some description", createErrorResponse(404, asJson(responseBody))));
 
-        var logged = testLogAppender.getLastLoggedEvent();
+        ILoggingEvent logged = testLogAppender.getLastLoggedEvent();
         assertThat(logged.getMarker()).isInstanceOf(RawJsonAppendingMarker.class);
 
-        var jsonMarker = (RawJsonAppendingMarker) logged.getMarker();
+        RawJsonAppendingMarker jsonMarker = (RawJsonAppendingMarker) logged.getMarker();
         assertThat(jsonMarker.getFieldName()).isEqualTo("error_response");
+        assertThat(logged.getFormattedMessage()).isEqualTo("PDS FHIR Request failed - Patient not found 404");
 
-        var loggedJson = (String) jsonMarker.getFieldValue();
-        assertThat(loggedJson.contains("some_code")).isTrue();
-        assertThat(loggedJson.contains("some_detail")).isTrue();
+        String markerOutput = jsonMarker.toString();
+        assertThat(markerOutput).contains("some_code");
+        assertThat(markerOutput).contains("example code");
+        assertThat(markerOutput).contains("some_detail");
+        assertThat(markerOutput).contains("example detail");
     }
 
     @Test
     void shouldThrowBadRequestExceptionWhenPdsResourceInvalid() {
-        var badRequest400 = new HttpClientErrorException(BAD_REQUEST, "bad-request-error");
+        HttpClientErrorException badRequest400 = new HttpClientErrorException(BAD_REQUEST, "bad-request-error");
 
-        var exception = assertThrows(BadRequestException.class, () ->
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->
                 handler.handleCommonExceptions("context", badRequest400));
 
         assertThat(exception.getMessage())
@@ -69,19 +74,19 @@ class PdsFhirExceptionHandlerTest {
 
     @Test
     void shouldThrowNotFoundExceptionIfPatientNotFoundInPds() {
-        var notFound404 = new HttpClientErrorException(HttpStatus.NOT_FOUND, "error");
+        HttpClientErrorException notFound404 = new HttpClientErrorException(HttpStatus.NOT_FOUND, "error");
 
-        var exception = assertThrows(NotFoundException.class, () ->
+        NotFoundException exception = assertThrows(NotFoundException.class, () ->
                 handler.handleCommonExceptions("context", notFound404));
 
         assertThat(exception.getMessage()).isEqualTo("PDS FHIR Request failed - Patient not found 404");
     }
 
     @Test
-    void shouldThrowAccessTokenRequestExceptionOnForbiddenError___reallyThisIsSuchAComplicatedInteractionAndTotallyUnexpectedSoIfIGetForbiddenFromPdsFhirClientImMeantToAssumeItWasDownToTheAccessTokenRequest__itDoesntSeemReasonable___surelyIfItsSomethingToDoWithReauthenticationItsNothingToDoWithPdsFhirClientPerSeItsAConcernOftheAuthenticatingHttpClient() {
-        var forbiddenError403 = new HttpClientErrorException(HttpStatus.FORBIDDEN, "error");
+    void shouldThrowAccessTokenRequestExceptionOnForbiddenError() {
+        HttpClientErrorException forbiddenError403 = new HttpClientErrorException(HttpStatus.FORBIDDEN, "error");
 
-        var exception = assertThrows(AccessTokenRequestException.class, () ->
+        AccessTokenRequestException exception = assertThrows(AccessTokenRequestException.class, () ->
                 handler.handleCommonExceptions("context", forbiddenError403));
 
         assertThat(exception.getMessage()).contains("Access token request failed");
@@ -90,9 +95,9 @@ class PdsFhirExceptionHandlerTest {
 
     @Test
     void shouldThrowAccessTokenRequestExceptionOnUnauthorizedError() {
-        var unauthorizedError401 = new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "error");
+        HttpClientErrorException unauthorizedError401 = new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "error");
 
-        var exception = assertThrows(AccessTokenRequestException.class, () ->
+        AccessTokenRequestException exception = assertThrows(AccessTokenRequestException.class, () ->
                 handler.handleCommonExceptions("context", unauthorizedError401));
 
         assertThat(exception.getMessage()).contains("Access token request failed");
@@ -101,29 +106,29 @@ class PdsFhirExceptionHandlerTest {
 
     @Test
     void shouldThrowTooManyRequestsExceptionWhenExceedingPdsFhirRateLimit() {
-        var tooManyRequests429 = new HttpClientErrorException(HttpStatus.TOO_MANY_REQUESTS, "error");
+        HttpClientErrorException tooManyRequests429 = new HttpClientErrorException(HttpStatus.TOO_MANY_REQUESTS, "error");
 
-        var exception = assertThrows(TooManyRequestsException.class, () ->
+        TooManyRequestsException exception = assertThrows(TooManyRequestsException.class, () ->
                 handler.handleCommonExceptions("context", tooManyRequests429));
 
         assertThat(exception.getMessage()).isEqualTo("Rate limit exceeded for PDS FHIR - too many requests");
     }
 
     @Test
-    void whenPdsFhirIsApparentlyUnavailableShouldThrowExceptionDenotingThatItIsPossiblyATemporaryIssueAndThereforeProbablyUsefulToRetry() {
-        var pdsServiceIsUnavailable503 = new HttpServerErrorException(HttpStatus.SERVICE_UNAVAILABLE, "error");
+    void shouldThrowRetryableRequestExceptionOnServiceUnavailable() {
+        HttpServerErrorException pdsServiceIsUnavailable503 = new HttpServerErrorException(HttpStatus.SERVICE_UNAVAILABLE, "error");
 
-        var exception = assertThrows(RetryableRequestException.class, () ->
+        RetryableRequestException exception = assertThrows(RetryableRequestException.class, () ->
                 handler.handleCommonExceptions("context", pdsServiceIsUnavailable503));
 
         assertThat(exception.getMessage()).isEqualTo("PDS FHIR request failed status code: 503. reason 503 error");
     }
 
     @Test
-    void whenThereIsANetworkFailureOrTimeoutThrowExceptionThatItIsProbablyUsefulToRetry() {
-        var networkFailure = new ResourceAccessException("something like a socket timeout");
+    void shouldThrowRetryableRequestExceptionOnNetworkFailure() {
+        ResourceAccessException networkFailure = new ResourceAccessException("something like a socket timeout");
 
-        var exception = assertThrows(RetryableRequestException.class, () ->
+        RetryableRequestException exception = assertThrows(RetryableRequestException.class, () ->
                 handler.handleCommonExceptions("context", networkFailure));
 
         assertThat(exception.getCause()).isEqualTo(networkFailure);
@@ -131,11 +136,11 @@ class PdsFhirExceptionHandlerTest {
     }
 
     @Test
-    void shouldThrowRuntimeExceptionWhenClientCannotParseSeeminglySuccessfulResponse____feelsLikeImplementationDetailLowerDownShouldMoveIntoHttpClient() {
-        var unparseableResponseException = new UnknownContentTypeException(PdsFhirPatient.class, APPLICATION_JSON, 200,
+    void shouldThrowRuntimeExceptionWhenResponseCannotBeParsed() {
+        UnknownContentTypeException unparseableResponseException = new UnknownContentTypeException(PdsFhirPatient.class, APPLICATION_JSON, 200,
                 "ok", new HttpHeaders(), new byte[0]);
 
-        var exception = assertThrows(RuntimeException.class, () ->
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
                 handler.handleCommonExceptions("requesting", unparseableResponseException));
 
         assertThat(exception.getMessage()).contains("PDS FHIR returned unexpected response body when requesting PDS Record");
@@ -143,9 +148,9 @@ class PdsFhirExceptionHandlerTest {
 
     @Test
     void shouldRethrowInitialAccessTokenRequestException() {
-        var exceptionFromAuthenticationStack = new AccessTokenRequestException(new HttpServerErrorException(HttpStatus.SERVICE_UNAVAILABLE));
+        AccessTokenRequestException exceptionFromAuthenticationStack = new AccessTokenRequestException(new HttpServerErrorException(HttpStatus.SERVICE_UNAVAILABLE));
 
-        var exception = assertThrows(RuntimeException.class, () ->
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
                 handler.handleCommonExceptions("requesting", exceptionFromAuthenticationStack));
 
         assertThat(exception).isEqualTo(exceptionFromAuthenticationStack);
@@ -153,21 +158,19 @@ class PdsFhirExceptionHandlerTest {
 
     @Test
     void shouldRethrowInitialRuntimeExceptionWhenNotSpecificallyHandled() {
-        var unexpectedException = new IllegalArgumentException("not anticipated");
+        IllegalArgumentException unexpectedException = new IllegalArgumentException("not anticipated");
 
-        var exception = assertThrows(RuntimeException.class, () ->
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
                 handler.handleCommonExceptions("requesting", unexpectedException));
 
         assertThat(exception).isEqualTo(unexpectedException);
     }
 
-    @NotNull
     private HttpClientErrorException createErrorResponse(int statusCode, String responseBodyJson) {
         return new HttpClientErrorException(HttpStatus.resolve(statusCode), "error", responseBodyJson.getBytes(UTF_8), UTF_8);
     }
 
-    private String asJson(HashMap<Object, Object> errorResponseBodyContent) {
+    private String asJson(Map<String, String> errorResponseBodyContent) {
         return new JSONObject(errorResponseBodyContent).toString();
     }
-
 }

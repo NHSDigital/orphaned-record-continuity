@@ -15,8 +15,9 @@ import software.amazon.awssdk.services.ssm.paginators.GetParametersByPathIterabl
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,7 +32,6 @@ public class ReadSSMParameterTest {
     private Parameter user2;
     private Parameter service1;
 
-
     @BeforeEach
     void setup() {
         ssmClient = Mockito.mock(SsmClient.class);
@@ -39,12 +39,12 @@ public class ReadSSMParameterTest {
 
         getParametersByPathRequestForService = GetParametersByPathRequest.builder()
                 .withDecryption(Boolean.TRUE)
-                .path("/repo/" + "local" + "/user-input/api-keys/pds-adaptor/")
+                .path("/repo/local/user-input/api-keys/pds-adaptor/")
                 .build();
 
         getParametersByPathRequestForUser = GetParametersByPathRequest.builder()
                 .withDecryption(Boolean.TRUE)
-                .path("/repo/" + "local" + "/user-input/api-keys/pds-adaptor/api-key-user")
+                .path("/repo/local/user-input/api-keys/pds-adaptor/api-key-user")
                 .build();
 
         user1 = Parameter.builder().name("user1").type(ParameterType.SECURE_STRING).value("12345").build();
@@ -53,15 +53,21 @@ public class ReadSSMParameterTest {
     }
 
     @Test
-    void shouldCallGetParameterByPathAndReturnMapOfApiKeys(){
+    void shouldCallGetParameterByPathAndReturnMapOfApiKeys() {
         // setup
-        GetParametersByPathResponse userApiKeyParameters = GetParametersByPathResponse.builder().parameters(Arrays.asList(user1, user2)).build();
-        GetParametersByPathResponse serviceApiKeyParameters = GetParametersByPathResponse.builder().parameters(List.of(service1)).build();
-        GetParametersByPathIterable iterableService = new GetParametersByPathIterable(ssmClient, getParametersByPathRequestForService);
-        GetParametersByPathIterable iterableUser = new GetParametersByPathIterable(ssmClient, getParametersByPathRequestForUser);
+        GetParametersByPathResponse serviceApiKeyParameters = GetParametersByPathResponse.builder()
+                .parameters(List.of(service1))
+                .build();
+        GetParametersByPathResponse userApiKeyParameters = GetParametersByPathResponse.builder()
+                .parameters(Arrays.asList(user1, user2))
+                .build();
 
-        when(ssmClient.getParametersByPath(getParametersByPathRequestForService)).thenReturn(userApiKeyParameters);
-        when(ssmClient.getParametersByPath(getParametersByPathRequestForUser)).thenReturn(serviceApiKeyParameters);
+        GetParametersByPathIterable iterableService = Mockito.mock(GetParametersByPathIterable.class);
+        GetParametersByPathIterable iterableUser = Mockito.mock(GetParametersByPathIterable.class);
+
+        when(iterableService.stream()).thenReturn(Stream.of(serviceApiKeyParameters));
+        when(iterableUser.stream()).thenReturn(Stream.of(userApiKeyParameters));
+
         when(ssmClient.getParametersByPathPaginator(getParametersByPathRequestForService)).thenReturn(iterableService);
         when(ssmClient.getParametersByPathPaginator(getParametersByPathRequestForUser)).thenReturn(iterableUser);
 
@@ -69,12 +75,12 @@ public class ReadSSMParameterTest {
         Map<String, String> apiKeys = ssmParamService.getApiKeys("local");
 
         // assertions
-        verify(ssmClient).getParametersByPath(getParametersByPathRequestForService);
-        verify(ssmClient).getParametersByPath(getParametersByPathRequestForUser);
+        verify(ssmClient).getParametersByPathPaginator(getParametersByPathRequestForService);
+        verify(ssmClient).getParametersByPathPaginator(getParametersByPathRequestForUser);
 
-        assertTrue(apiKeys.containsKey("user1") && apiKeys.containsValue("12345"));
-        assertTrue(apiKeys.containsKey("user2") && apiKeys.containsValue("56789"));
-        assertTrue(apiKeys.containsKey("service1") && apiKeys.containsValue("54321"));
+        assertEquals("12345", apiKeys.get("user1"));
+        assertEquals("56789", apiKeys.get("user2"));
+        assertEquals("54321", apiKeys.get("service1"));
+        assertEquals(3, apiKeys.size());
     }
-
 }

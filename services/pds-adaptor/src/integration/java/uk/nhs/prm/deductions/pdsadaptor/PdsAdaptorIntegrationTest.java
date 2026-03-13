@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.test.context.ContextConfiguration;
 import uk.nhs.prm.deductions.pdsadaptor.model.SuspendedPatientStatus;
@@ -244,7 +244,7 @@ public class PdsAdaptorIntegrationTest {
                 .withRequestBody(equalToJson(fhirPatchJsonToUpdateMofTo("A1235")))
                 .whenScenarioStateIs(STARTED)
                 .willReturn(aResponse()
-                        .withStatus(503) // request unsuccessful with status code 500
+                        .withStatus(503) // request unsuccessful with status code 503
                         .withHeader("Content-Type", "text/xml")
                         .withBody("<response>Some content</response>"))
                 .willSetStateTo("TRIED_ONCE"));
