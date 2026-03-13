@@ -1,9 +1,8 @@
 plugins {
-    id 'org.springframework.boot' version '3.2.1'
+    id 'org.springframework.boot' version '3.5.11'
     id 'io.spring.dependency-management' version '1.1.4'
     id 'java'
     id 'jacoco'
-    id 'com.github.spotbugs' version '6.0.6'
     id "org.sonarqube" version "4.4.1.3373"
 }
 
@@ -126,43 +125,6 @@ jacocoTestCoverageVerification {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: '**/model/**')
         }))
-    }
-}
-
-spotbugs {
-    toolVersion = '4.8.3'
-}
-
-spotbugsMain {
-    ignoreFailures = true
-    reports {
-        html {
-            enabled = true
-            destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
-        }
-    }
-}
-
-spotbugsTest {
-    ignoreFailures = true
-    reports {
-        html {
-            enabled = true
-            destination = file("$buildDir/reports/spotbugs/test/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
-        }
-    }
-}
-
-spotbugsIntegration {
-    ignoreFailures = true
-    reports {
-        html {
-            enabled = true
-            destination = file("$buildDir/reports/spotbugs/integration/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
-        }
     }
 }
 
