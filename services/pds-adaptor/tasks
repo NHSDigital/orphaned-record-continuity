@@ -65,17 +65,5 @@ case "${command}" in
     configure_local_run_against_aws_env
     ./gradlew bootRun
     ;;
-  wait_ecs)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      aws ecs wait services-stable \
-        --region $AWS_DEFAULT_REGION \
-        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
-        --service $NHS_ENVIRONMENT-${NHS_SERVICE}-service
-      ;;
-  *)
-      echo "Invalid command: '${command}'"
-      exit 1
-      ;;
 esac
 set +e
