@@ -109,17 +109,5 @@ case "${command}" in
   stop_localstack)
       stop_localstack
       ;;
-  wait_ecs)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      aws ecs wait services-stable \
-        --region $AWS_DEFAULT_REGION \
-        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
-        --service $NHS_ENVIRONMENT-${NHS_SERVICE}
-      ;;
-  *)
-      echo "Invalid command: '${command}'"
-      exit 1
-      ;;
 esac
 set +e
