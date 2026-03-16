@@ -18,13 +18,15 @@ function validEhrRequestMessage() {
 
 function TestSqsClient() {
   const awsAccountNo = config.awsAccountNo;
-  let _client = new SQSClient({ endpoint: config.localstackEndpointUrl, region: config.region });
+  const localstackEndpointUrl = config.localstackEndpointUrl;
+  const region = config.region;
+  let _client = new SQSClient({ endpoint: localstackEndpointUrl, region: region });
 
   let client = {};
   let deleteQueue = async queueName => {
     await _client.send(
       new DeleteQueueCommand({
-        QueueUrl: `${config.localstackEndpointUrl}/${awsAccountNo}/${queueName}`
+        QueueUrl: `${localstackEndpointUrl}/${awsAccountNo}/${queueName}`
       })
     );
   };

@@ -40,15 +40,15 @@ jobs:
       changed: ${{ steps.get_changes.outputs.changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Get Changes
         id: get_changes
         run: |
-          git fetch origin ${{ github.event.pull_request.base.ref }}
-          changed=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | tr '\n' ' ')
+          git fetch origin main
+          changed=$(git diff --name-only origin/main... | tr '\n' ' ')
           echo "changed=$changed" >> $GITHUB_OUTPUT
 
   ehr-repo:

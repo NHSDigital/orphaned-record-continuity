@@ -21,7 +21,7 @@ import moment from 'moment-timezone';
 
 describe('app', () => {
   const config = initializeConfig();
-  const authorizationKeys = 'correct-key';
+  const authorizationKeys = 'LSIA5678901234567890';
 
   const createReqBodyForEhr = (messageId, conversationId, nhsNumber, fragmentMessageIds) => ({
     data: {

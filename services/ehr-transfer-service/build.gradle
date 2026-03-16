@@ -153,8 +153,8 @@ spotbugsIntegration {
 
 sonar {
     properties {
-        property 'sonar.projectKey', 'prm-orphaned-record-continuity_prm-repo-ehr-transfer-service'
-        property 'sonar.organization', 'prm-orphaned-record-continuity'
+        property 'sonar.projectKey', 'NHSDigital_orphaned-record-continuity'
+        property 'sonar.organization', 'nhsdigital'
         property 'sonar.host.url', 'https://sonarcloud.io'
     }
 }

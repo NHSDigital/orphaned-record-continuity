@@ -7,27 +7,27 @@ name = "pypi"
 mesh-inbox-s3-forwarder = {editable = true, path = "."}
 
 [dev-packages]
-werkzeug = "~=2.1.0"
-moto = {version = "~=2.2", extras = ["server"]}
-pytest-cov = "~=2.12"
-pytest = "~=6.2"
-pyfakefs = "~=4.5"
-fake-mesh = "~=0.3"
-flake8 = "~=3.9"
-flake8-bugbear="~=21.9"
-flake8-comprehensions="~=3.6"
-mccabe="~=0.6"
-flake8-builtins="~=1.5"
-flake8-print="~=4.0"
-bandit = "~=1.7"
-isort = "~=5.9"
-black = "==21.9b0"
-mypy = "~=0.9"
-types-requests = "2.25"
-click = "~=8.0.4"
+werkzeug = "~=3.1.5"
+moto = {version = "~=5.1.21", extras = ["server"]}
+pytest-cov = "~=7.0.0"
+pytest = "~=9.0.2"
+pyfakefs = "~=6.1.0"
+fake-mesh = "~=0.4.0"
+flake8 = "~=7.3.0"
+flake8-bugbear="~=25.11.29"
+flake8-comprehensions="~=3.17.0"
+mccabe="~=0.7.0"
+flake8-builtins="~=3.1.0"
+flake8-print="~=5.0.0"
+bandit = "~=1.9.3"
+isort = "~=7.0.0"
+black = "==26.1.0"
+mypy = "~=1.19.1"
+types-requests = "~=2.32.4"
+click = "~=8.3.1"
 
 [requires]
-python_version = "3.9"
+python_version = "3.14.3"
 
 [scripts]
 test = "python -m pytest --cov=awsmesh --cov-report=term-missing tests/unit tests/e2e"

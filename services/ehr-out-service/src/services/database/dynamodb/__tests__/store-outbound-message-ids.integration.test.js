@@ -70,7 +70,7 @@ describe('storeOutboundMessageIds', () => {
     });
 
     const fragments = records.filter(isFragment);
-    expect(fragments).toHaveLength(INBOUND_FRAGMENT_IDS.length);
+    expect(fragments.length).toBe(INBOUND_FRAGMENT_IDS.length);
 
     fragments.forEach(fragment => {
       const inboundMessageId = fragment.InboundMessageId;
@@ -106,7 +106,7 @@ describe('storeOutboundMessageIds', () => {
 
     // then
     const expectedLogMessage = 'Recorded outbound message IDs in database';
-    expect(logInfo).toBeCalledWith(expectedLogMessage);
+    expect(logInfo).toHaveBeenCalledWith(expectedLogMessage);
   });
 
   it('should throw an error when oldMessageId is invalid', async () => {
