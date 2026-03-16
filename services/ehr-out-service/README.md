@@ -3,7 +3,6 @@
 This component is part of the Repository, responsible for creating and handling of EHR transfers out from the Repository,
 when the Orphaned/Stranded health record stored in the Repository's `ehr-repository` is requested by the next registering
 practice.
-
 When the a GP2GP EHR request on its incoming queue, the `ehr-out-service` accepts this and creates a record to track this outward transfer.
 After the successful validation of the request and retrieval of patient's health record from `ehr-repository`, it sends the 
 EHR out to the requesting practice via `gp2gp-messenger`.
@@ -16,27 +15,7 @@ Follow the links to download
 - [Node](https://nodejs.org/en/download/package-manager/#nvm) - version 14.x
 - [Docker](https://docs.docker.com/install/)
 
-### AWS helpers
-
-This repository imports shared AWS helpers from [prm-deductions-support-infra](https://github.com/nhsconnect/prm-deductions-support-infra/).
-They can be found `utils` directory after running any task from `tasks` file.
-
-## Directories
-
-| Directory         | Description                                       |
-| :---------------- |:--------------------------------------------------|
-| /test/docker      | Contains smoke test for docker                    |
-| /test/functional  | Contains tests against deployed service           |
-| /gocd             | Contains the GoCD pipeline files                  |
-| /src              | The source code                                   |
-| /terraform        | Terraform to deploy app as a Fargate task in AWS  |
-| /scripts          | Useful scripts (e.g. for sending canary messages) |
-| /utils            | Contains aws-helpers                              |
-
 ## Starting the app locally
-
-*BEWARE be sure what you're doing here as `node_modules` can contain platform-specific files e.g. mac vs linux/amd64 not
-necessarily compatible*
 
 1. Run `npm install` to install all node dependencies.
 2. Configure local environment variables:
@@ -76,14 +55,6 @@ Run `./tasks test_integration` to run integration tests.
 
 Runs the coverage tests (unit test and integration test) and collects coverage metrics.
 Run `./tasks test_coverage` to run coverage tests.
-
-### Local Docker tests
-
-Run `./tasks test_docker_local`. Make sure you have followed the steps to start the app in production mode beforehand.
-
-### Functional tests
-
-Run `./tasks test_functional`. This will run the end to end tests within [./test/functional](./test/functional). (Note you may need to be connected to VPN).
 
 ## Pre-commit Checks
 

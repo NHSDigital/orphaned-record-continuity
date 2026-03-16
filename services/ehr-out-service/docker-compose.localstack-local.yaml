@@ -12,3 +12,11 @@ services:
     volumes:
       - "/var/lib/localstack:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+    links:
+      - dynamodb-local:dynamodb-local
+  dynamodb-local:
+    network_mode: bridge
+    image: amazon/dynamodb-local
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    ports:
+      - "4573:8000"

@@ -1,12 +1,12 @@
 services:
   localstack:
-    container_name: "localstack-ehr-out-service"
+    container_name: "localstack-ehr-repo-service"
     image: localstack/localstack
     network_mode: bridge
     ports:
       - "127.0.0.1:4566:4566"
     environment:
-      - SERVICES=sqs,dynamodb
+      - SERVICES=sqs,dynamodb,s3
       - DEFAULT_REGION=eu-west-2
       - GATEWAY_LISTEN=4566
     volumes:

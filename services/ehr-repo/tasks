@@ -38,14 +38,14 @@ function prepare_local_envs_for_ide {
 }
 
 function configure_local_envs {
-  export AUTHORIZATION_KEYS=auth-keys-1
+  export AUTHORIZATION_KEYS=LSIA5678901234567890
   export S3_BUCKET_NAME=test-bucket
-  export LOCALSTACK_URL=http://localstack:4572/
+  export LOCALSTACK_URL=http://localhost:4566/
   export REPOSITORY_URI=$IMAGE_REPO_NAME
   export NODE_ENV=local
 
   export DYNAMODB_NAME=local-test-db
-  export DYNAMODB_LOCAL_ENDPOINT=http://localstack:4572/
+  export DYNAMODB_LOCAL_ENDPOINT=http://localhost:4573/
   export AWS_ACCESS_KEY_ID=LSIA5678901234567890
   export AWS_SECRET_ACCESS_KEY=LSIA5678901234567890
 
@@ -80,6 +80,30 @@ function build_docker_image() {
   docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$IMAGE_TAG .
   echo Build completed on `date`
 }
+function kill_container {
+  local filter=$1
+  local moniker=$2
+
+  echo docker processes running: $(docker ps)
+
+  DOCKER_CONTAINERS_MATCHING_FILTER=$(docker ps --filter $filter -q)
+
+  echo docker processes looking like $2 running matching filter: $DOCKER_CONTAINERS_MATCHING_FILTER
+
+  if [ -z "$DOCKER_CONTAINERS_MATCHING_FILTER" ]; then
+    echo no $moniker nonsense going on, cool
+  else
+    echo trying to kill $moniker...
+    docker stop $DOCKER_CONTAINERS_MATCHING_FILTER
+  fi
+}
+function destroy_localstack {
+  kill_container publish=4566 localstack
+  kill_container publish=4573 dynamodb-local
+}
+function start_localstack {
+  docker-compose -f docker-compose.localstack-local.yaml up -d
+}
 
 ###########
 ## TASKS ##
@@ -113,8 +137,11 @@ case "${command}" in
       npm run lint
       npm run test:unit
       configure_local_envs
+      start_localstack
+      sh scripts/create-bucket.sh
       sh scripts/create-dynamodb-table.sh
       npm run test:integration
+      destroy_localstack
       ;;
   test_coverage)
       npm install
@@ -135,6 +162,12 @@ case "${command}" in
       nslookup "ehr-repo.${DOMAIN_INFIX}.patient-deductions.nhs.uk"
       curl -i --fail "https://ehr-repo.${DOMAIN_INFIX}.patient-deductions.nhs.uk/health"
       ;;
+  start_localstack)
+    start_localstack
+    ;;
+  destroy_localstack)
+    destroy_localstack
+    ;;
   wait_ecs)
       aws ecs wait services-stable \
         --region $AWS_DEFAULT_REGION \
