@@ -9,7 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
 import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsRetryHandler;
 
-import javax.jms.JMSException;
+import jakarta.jms.JMSException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;

@@ -1,6 +1,5 @@
 package uk.nhs.prm.repo.re_registration;
 
-import com.amazonaws.services.sqs.AmazonSQSAsync;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDb;
 import uk.nhs.prm.repo.re_registration.infra.LocalStackAwsConfig;
 import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @ContextConfiguration(classes = LocalStackAwsConfig.class)
 public class ActiveSuspensionsIntegrationTest {
     @Autowired
-    private AmazonSQSAsync amazonSQSAsync;
+    private SqsClient sqs;
 
     @Autowired
     ActiveSuspensionsDb activeSuspensionsDb;
@@ -37,9 +37,6 @@ public class ActiveSuspensionsIntegrationTest {
 
     @Value("${aws.reRegistrationsQueueName}")
     private String reRegistrationsQueueName;
-
-    @Autowired
-    private AmazonSQSAsync sqs;
 
     private static final String NHS_NUMBER = "0987654321";
     private static final String PREVIOUS_ODS_CODE = "OLD001";
@@ -77,8 +74,8 @@ public class ActiveSuspensionsIntegrationTest {
     }
 
     private void sendMessage(String queueName, String messageBody) {
-        var queueUrl = amazonSQSAsync.getQueueUrl(queueName).getQueueUrl();
-        amazonSQSAsync.sendMessage(queueUrl, messageBody);
+        var queueUrl = sqs.getQueueUrl(builder -> builder.queueName(queueName)).queueUrl();
+        sqs.sendMessage(builder -> builder.queueUrl(queueUrl).messageBody(messageBody));
     }
 
     private String getActiveSuspensionsMessage() {

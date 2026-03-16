@@ -1,6 +1,6 @@
 plugins {
-    id 'org.springframework.boot' version '3.5.11'
-    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.springframework.boot' version '4.0.3'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'java'
     id 'jacoco'
     id "org.sonarqube" version "4.4.1.3373"
@@ -8,7 +8,6 @@ plugins {
 
 group = 'uk.nhs.prm.repo'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '21'
 
 configurations {
     compileOnly {
@@ -20,6 +19,12 @@ repositories {
     mavenCentral()
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
 //Without this task two jars are built, the additional "-plain.jar" is not needed
 // for more details refer to: https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#packaging-executable.and-plain-archives
 jar {
@@ -27,50 +32,45 @@ jar {
 }
 
 dependencies {
-    implementation('com.google.guava:guava') { version { strictly '32.1.3-jre' } }
-
-    implementation('org.yaml:snakeyaml') { version { strictly '2.2' } }
-
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    implementation('io.netty:netty-buffer') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-codec') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-codec-http') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-codec-http2') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-common') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-handler') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-resolver') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-transport') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-transport-classes-epoll') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-transport-native-unix-common') { version { strictly '4.1.104.Final' } }
+    implementation 'org.yaml:snakeyaml:2.5'
 
-    implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:1.1.2'
+    implementation('io.netty:netty-buffer') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-codec') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-codec-http') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-codec-http2') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-common') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-handler') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-resolver') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-transport') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-transport-classes-epoll') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-transport-native-unix-common') { version { strictly '4.2.9.Final' } }
 
-    implementation platform('software.amazon.awssdk:bom:2.18.41')
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:2.1.4'
+
+    implementation platform('software.amazon.awssdk:bom:2.41.14')
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:sqs'
     implementation 'software.amazon.awssdk:sns'
     implementation 'software.amazon.awssdk:dynamodb'
 
-    implementation group: 'javax.inject', name: 'javax.inject', version: '1'
-    implementation 'org.springframework:spring-jms:5.3.19'
-    implementation 'com.google.code.gson:gson:2.10.1'
-    implementation 'io.github.resilience4j:resilience4j-retry:1.7.1'
+    implementation 'com.google.code.gson:gson:2.13.2'
+    implementation 'io.github.resilience4j:resilience4j-retry:2.3.0'
 
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.2'
+    implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
 
-    compileOnly 'org.projectlombok:lombok:1.18.24'
+    compileOnly 'org.projectlombok:lombok:1.18.42'
     annotationProcessor 'org.projectlombok:lombok'
-
-    implementation 'com.github.spotbugs:spotbugs-annotations:4.8.3'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-test'
 
-    testImplementation "org.mockito:mockito-core:3.+"
-    testImplementation 'org.wiremock:wiremock-standalone:3.3.1'
-    testImplementation 'org.awaitility:awaitility:4.2.0'
+    testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
+    testImplementation 'org.awaitility:awaitility:4.3.0'
 }
 
 test {

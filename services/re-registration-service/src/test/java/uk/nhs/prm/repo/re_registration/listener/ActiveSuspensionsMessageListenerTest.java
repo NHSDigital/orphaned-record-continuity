@@ -11,7 +11,7 @@ import uk.nhs.prm.repo.re_registration.handlers.ActiveSuspensionsHandler;
 import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 import uk.nhs.prm.repo.re_registration.parser.ActiveSuspensionsParser;
 
-import javax.jms.JMSException;
+import jakarta.jms.JMSException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;

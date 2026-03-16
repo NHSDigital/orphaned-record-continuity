@@ -1,8 +1,7 @@
 package uk.nhs.prm.repo.re_registration.utility;
 
-
-import org.joda.time.DateTime;
-import wiremock.org.apache.commons.lang3.RandomStringUtils;
+import java.time.Instant;
+import java.util.UUID;
 
 public final class TestDataUtility {
     public static String UNESCAPED_HTML = "<!DOCTYPE html><html lang='en'><head></head><body></body></html>";
@@ -10,11 +9,11 @@ public final class TestDataUtility {
     public static String NHS_NUMBER = "9745812541";
 
     public static String getRandomTimestamp() {
-        return DateTime.now().toDateTimeISO().toString();
+        return Instant.now().toString();
     }
 
     public static String getRandomOdsCode() {
-        return RandomStringUtils.randomAlphanumeric(6);
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 6);
     }
 
     private TestDataUtility() { }

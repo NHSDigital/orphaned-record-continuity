@@ -1,13 +1,5 @@
 package uk.nhs.prm.repo.re_registration.infra;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
-import com.amazonaws.services.sqs.model.CreateQueueRequest;
-import com.amazonaws.services.sqs.model.GetQueueAttributesResult;
-import com.amazonaws.services.sqs.model.QueueDoesNotExistException;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,9 +24,12 @@ import software.amazon.awssdk.services.sns.model.CreateTopicRequest;
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse;
 import software.amazon.awssdk.services.sns.model.SubscribeRequest;
 import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
+import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,7 +55,7 @@ public class LocalStackAwsConfig {
     private String awsRegion;
 
     @Autowired
-    private AmazonSQSAsync amazonSQSAsync;
+    private SqsClient sqsClient;
 
     @Autowired
     private DynamoDbClient dynamoDbClient;
@@ -69,18 +64,11 @@ public class LocalStackAwsConfig {
     private String activeSuspensionsDynamoDbTableName;
 
     @Bean
-    public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) throws URISyntaxException {
+    public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) {
         return SqsClient.builder()
-                .credentialsProvider((() -> AwsBasicCredentials.create("FAKE", "FAKE")))
-                .endpointOverride(new URI(localstackUrl))
-                .build();
-    }
-
-    @Bean
-    public static AmazonSQSAsync amazonSQSAsync(@Value("${localstack.url}") String localstackUrl) {
-        return AmazonSQSAsyncClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("FAKE", "FAKE")))
-                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("FAKE", "FAKE")))
+                .endpointOverride(URI.create(localstackUrl))
+                .region(Region.EU_WEST_2)
                 .build();
     }
 
@@ -126,10 +114,12 @@ public class LocalStackAwsConfig {
     @PostConstruct
     public void setupTestQueuesTopicsAndDb() {
         recreateReRegistrationsQueue();
-        var reRegistrationsAuditQueue = amazonSQSAsync.createQueue(reRegistrationsAuditQueueName);
+        var reRegistrationsAuditQueue = sqsClient.createQueue(
+                CreateQueueRequest.builder().queueName(reRegistrationsAuditQueueName).build()
+        );
         var topic = snsClient.createTopic(CreateTopicRequest.builder().name("re_registration_audit_sns_topic").build());
 
-        createSnsTestReceiverSubscription(topic, getQueueArn(reRegistrationsAuditQueue.getQueueUrl()));
+        createSnsTestReceiverSubscription(topic, getQueueArn(reRegistrationsAuditQueue.queueUrl()));
 
         setupDbAndTable();
     }
@@ -186,11 +176,7 @@ public class LocalStackAwsConfig {
     }
 
     private void createQueue(String queueName) {
-        CreateQueueRequest createQueueRequest = new CreateQueueRequest();
-        createQueueRequest.setQueueName(queueName);
-        HashMap<String, String> attributes = new HashMap<>();
-        createQueueRequest.withAttributes(attributes);
-        amazonSQSAsync.createQueue(queueName);
+        sqsClient.createQueue(CreateQueueRequest.builder().queueName(queueName).build());
     }
 
     private void createSnsTestReceiverSubscription(CreateTopicResponse topic, String queueArn) {
@@ -215,12 +201,18 @@ public class LocalStackAwsConfig {
     }
 
     private void deleteQueue(String queueName) {
-        amazonSQSAsync.deleteQueue(amazonSQSAsync.getQueueUrl(queueName).getQueueUrl());
+        var queueUrl = sqsClient.getQueueUrl(builder -> builder.queueName(queueName)).queueUrl();
+        sqsClient.deleteQueue(builder -> builder.queueUrl(queueUrl));
     }
 
     private String getQueueArn(String queueUrl) {
-        GetQueueAttributesResult queueAttributes = amazonSQSAsync.getQueueAttributes(queueUrl, List.of("QueueArn"));
-        return queueAttributes.getAttributes().get("QueueArn");
+        var queueAttributes = sqsClient.getQueueAttributes(
+                GetQueueAttributesRequest.builder()
+                        .queueUrl(queueUrl)
+                        .attributeNames(QueueAttributeName.QUEUE_ARN)
+                        .build()
+        );
+        return queueAttributes.attributes().get(QueueAttributeName.QUEUE_ARN);
     }
 
 }

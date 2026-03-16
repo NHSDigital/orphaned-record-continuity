@@ -5,7 +5,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
-import javax.jms.JMSException;
+import jakarta.jms.JMSException;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;

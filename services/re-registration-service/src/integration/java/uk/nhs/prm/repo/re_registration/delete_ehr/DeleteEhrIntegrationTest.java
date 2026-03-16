@@ -1,9 +1,5 @@
 package uk.nhs.prm.repo.re_registration.delete_ehr;
 
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.PurgeQueueRequest;
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,6 +16,10 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDb;
 import uk.nhs.prm.repo.re_registration.infra.LocalStackAwsConfig;
 import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
@@ -30,17 +30,17 @@ import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 @SpringBootTest()
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration( classes = LocalStackAwsConfig.class)
+@ContextConfiguration(classes = LocalStackAwsConfig.class)
 @DirtiesContext
 public class DeleteEhrIntegrationTest {
 
@@ -48,7 +48,7 @@ public class DeleteEhrIntegrationTest {
     public static final String NHS_NUMBER = "9999567890";
 
     @Autowired
-    private AmazonSQSAsync sqs;
+    private SqsClient sqs;
 
     @Autowired
     ActiveSuspensionsDb activeSuspensionsDb;
@@ -66,12 +66,11 @@ public class DeleteEhrIntegrationTest {
     private String reRegistrationsQueueUrl;
     private String reRegistrationsAuditUrl;
 
-
     @BeforeEach
     public void setUp() {
         stubPdsAdaptor = initializeWebServer();
-        reRegistrationsQueueUrl = sqs.getQueueUrl(reRegistrationsQueueName).getQueueUrl();
-        reRegistrationsAuditUrl = sqs.getQueueUrl(reRegistrationsAuditQueueName).getQueueUrl();
+        reRegistrationsQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(reRegistrationsQueueName)).queueUrl();
+        reRegistrationsAuditUrl = sqs.getQueueUrl(builder -> builder.queueName(reRegistrationsAuditQueueName)).queueUrl();
         stubResponses();
     }
 
@@ -79,7 +78,7 @@ public class DeleteEhrIntegrationTest {
     public void tearDown() {
         stubPdsAdaptor.resetAll();
         stubPdsAdaptor.stop();
-        sqs.purgeQueue(new PurgeQueueRequest(reRegistrationsAuditUrl));
+        sqs.purgeQueue(PurgeQueueRequest.builder().queueUrl(reRegistrationsAuditUrl).build());
     }
 
     private WireMockServer initializeWebServer() {
@@ -91,10 +90,10 @@ public class DeleteEhrIntegrationTest {
     @Test
     void shouldPutTheEHRDeleteAuditMessageOntoTheAuditQueueWhenActiveSuspensionExistsInDBAndPDSReturnsAStatusCode200() {
         activeSuspensionsDb.save(getActiveSuspensionsMessage());
-        sqs.sendMessage(reRegistrationsQueueUrl, getReRegistrationEvent().toJsonString());
+        sqs.sendMessage(builder -> builder.queueUrl(reRegistrationsQueueUrl).messageBody(getReRegistrationEvent().toJsonString()));
 
-        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
-            String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> {
+            String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).body();
             System.out.println("Found message - " + messageBody);
 
             assertThat(messageBody).contains("\"status\":\"ACTION:RE_REGISTRATION_EHR_DELETED\"");
@@ -103,13 +102,12 @@ public class DeleteEhrIntegrationTest {
         });
     }
 
-
     @Test
     void shouldPutTheUnknownReRegistrationsAuditMessageOntoTheAuditQueueWhenActiveSuspensionDoesNotExistInDBAndPDSReturnsAStatusCode200() {
-        sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
+        sqs.sendMessage(builder -> builder.queueUrl(reRegistrationsQueueUrl).messageBody(getReRegistrationEvent().toJsonString()));
 
-        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
-            String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> {
+            String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).body();
             System.out.println("Found message - " + messageBody);
             assertThat(messageBody).contains("\"status\":\"NO_ACTION:UNKNOWN_REGISTRATION_EVENT_RECEIVED\"");
         });
@@ -121,17 +119,16 @@ public class DeleteEhrIntegrationTest {
     }
 
     private void setPds200SuccessState() {
-        stubFor(get(urlMatching("/suspended-patient-status/" + NHS_NUMBER))
-                .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
-                .inScenario("Retry Scenario")
+        stubPdsAdaptor.stubFor(get(urlEqualTo("/suspended-patient-status/" + NHS_NUMBER))
+                .withHeader("Authorization", equalTo("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
                 .willReturn(aResponse()
                         .withStatus(200)
-                        .withHeader("Content-Type", "text/xml")
+                        .withHeader("Content-Type", "application/json")
                         .withBody(getPdsResponseString().getBody())));
     }
 
     private void ehrRepository200Response() {
-        stubFor(delete(urlMatching("/patients/" + NHS_NUMBER))
+        stubPdsAdaptor.stubFor(delete(urlEqualTo("/patients/" + NHS_NUMBER))
                 .withHeader("Authorization", matching(authKey))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -151,13 +148,14 @@ public class DeleteEhrIntegrationTest {
     private List<Message> checkMessageInRelatedQueue(String queueUrl) {
         LOGGER.info("Checking SQS Queue: {}", queueUrl);
 
-        ReceiveMessageRequest requestForMessagesWithAttributes = new ReceiveMessageRequest()
-                .withQueueUrl(queueUrl)
-                .withMessageAttributeNames("traceId");
+        ReceiveMessageRequest requestForMessagesWithAttributes = ReceiveMessageRequest.builder()
+                .queueUrl(queueUrl)
+                .messageAttributeNames("traceId")
+                .build();
 
         final List<Message> messages = sqs
                 .receiveMessage(requestForMessagesWithAttributes)
-                .getMessages();
+                .messages();
 
         LOGGER.info("Found {} messages on queue: {}", messages.size(), queueUrl);
         assertThat(messages).hasSize(1);

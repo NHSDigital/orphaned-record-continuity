@@ -57,7 +57,7 @@ function get_aws_account_id {
     AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 }
 
-function configure_envs {
+function configure_local_envs {
   export LOCALSTACK_URL="http://localhost:4566"
   export AWS_REGION="eu-west-2"
   export AWS_DEFAULT_REGION="eu-west-2"
@@ -115,13 +115,13 @@ case "${command}" in
       ./gradlew test
       ;;
   test_integration)
-      configure_envs
-      destroy_localstack
+      configure_local_envs
+      start_localstack
       ./gradlew --info integration
       ;;
   test_coverage)
-      configure_envs
-      destroy_localstack
+      configure_local_envs
+      start_localstack
       ./gradlew jacocoTestCoverageVerification
       ;;
   code_quality)
@@ -129,18 +129,19 @@ case "${command}" in
       ./gradlew check -x test -x integration
       ;;
   test_all)
-      configure_envs
+      configure_local_envs
+      start_localstack
       ./gradlew test integration jacocoTestCoverageVerification check
       ;;
   run_sonar)
-      configure_envs
+      configure_local_envs
       _assume_environment_role $NHS_ENVIRONMENT
       configure_sonar_environment_variable
       destroy_localstack
       ./gradlew build sonar --info
       ;;
   run_local)
-      configure_envs
+      configure_local_envs
       ./gradlew bootRun
       ;;
   start_localstack)

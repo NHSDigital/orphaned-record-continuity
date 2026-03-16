@@ -4,8 +4,7 @@ import com.amazon.sqs.javamessaging.ProviderConfiguration;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazon.sqs.javamessaging.SQSSession;
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,9 +16,9 @@ import uk.nhs.prm.repo.re_registration.listener.ActiveSuspensionsMessageListener
 import uk.nhs.prm.repo.re_registration.listener.ReRegistrationsEventListener;
 import uk.nhs.prm.repo.re_registration.parser.ActiveSuspensionsParser;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.Session;
+import jakarta.jms.JMSException;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.Session;
 
 @Configuration
 @RequiredArgsConstructor
@@ -38,13 +37,13 @@ public class SqsListenerSpringConfiguration {
     private final ActiveSuspensionsParser activeSuspensionsParser;
 
     @Bean
-    public AmazonSQSAsync amazonSQSAsync() {
-        return AmazonSQSAsyncClientBuilder.defaultClient();
+    public SqsClient sqsClient() {
+        return SqsClient.create();
     }
 
     @Bean
-    public SQSConnection createConnection(AmazonSQSAsync amazonSQSAsync) throws JMSException {
-        SQSConnectionFactory connectionFactory = new SQSConnectionFactory(new ProviderConfiguration(), amazonSQSAsync);
+    public SQSConnection createConnection(SqsClient sqsClient) throws JMSException {
+        SQSConnectionFactory connectionFactory = new SQSConnectionFactory(new ProviderConfiguration(), sqsClient);
         return connectionFactory.createConnection();
     }
 

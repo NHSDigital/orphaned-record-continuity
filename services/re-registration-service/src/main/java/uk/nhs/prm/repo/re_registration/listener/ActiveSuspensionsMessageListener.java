@@ -6,9 +6,9 @@ import uk.nhs.prm.repo.re_registration.config.Tracer;
 import uk.nhs.prm.repo.re_registration.handlers.ActiveSuspensionsHandler;
 import uk.nhs.prm.repo.re_registration.parser.ActiveSuspensionsParser;
 
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.TextMessage;
+import jakarta.jms.Message;
+import jakarta.jms.MessageListener;
+import jakarta.jms.TextMessage;
 
 @Slf4j
 @RequiredArgsConstructor
