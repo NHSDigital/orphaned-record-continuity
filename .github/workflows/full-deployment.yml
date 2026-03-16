@@ -16,6 +16,15 @@ on:
         type: boolean
         default: false
         required: true
+  workflow_call:
+    inputs:
+      environment:
+        default: dev
+        type: string
+      is_deployment:
+        description: "Do you want to apply changes?"
+        type: boolean
+        default: true
 
 permissions:
   pull-requests: write
