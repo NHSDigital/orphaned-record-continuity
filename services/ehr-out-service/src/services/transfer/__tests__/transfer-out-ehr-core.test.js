@@ -81,8 +81,9 @@ describe('transferOutEhrCore', () => {
     jest.resetAllMocks();
     try {
       await cleanupRecordsForTest(inboundConversationId);
-      // eslint-disable-next-line no-empty
-    } catch (e) {}
+    } catch (error) {
+      console.error('Error during cleanup after test:', error);
+    }
   });
 
   // ========================== TEST STARTS HERE ========================================

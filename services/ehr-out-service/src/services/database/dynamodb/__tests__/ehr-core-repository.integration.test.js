@@ -55,7 +55,7 @@ describe('ehr-core-repository', () => {
       );
 
       // then
-      expect(result).toEqual(true);
+      expect(result).toBe(true);
     });
 
     it('should return false if the given messageId does not match OutboundMessageId of core', async () => {
@@ -77,7 +77,7 @@ describe('ehr-core-repository', () => {
       const result = await messageIdMatchOutboundCore(outboundConversationId, nonExistMessageId);
 
       // then
-      expect(result).toEqual(false);
+      expect(result).toBe(false);
     });
   });
 
@@ -96,9 +96,9 @@ describe('ehr-core-repository', () => {
 
       await updateCoreStatusInDb(outboundConversationId, status);
       const result = await getCoreByOutboundConversationId(outboundConversationId);
-
+      const resultStatus = result.TransferStatus;
       // then
-      expect(result.TransferStatus).toEqual(status);
+      expect(resultStatus).toEqual(status);
     });
   });
 });

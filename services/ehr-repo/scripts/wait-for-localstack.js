@@ -5,8 +5,8 @@ const MAX_ATTEMPTS = 30;
 const isConnected = () => {
   return new Promise((resolve) => {
     const s3 = new S3({
-      accessKeyId: 'test-access-key',
-      secretAccessKey: 'test-secret-key',
+      accessKeyId: 'LSIA5678901234567890',
+      secretAccessKey: 'LSIA5678901234567890',
       endpoint: new Endpoint(process.env.LOCALSTACK_URL),
       s3ForcePathStyle: true
     });

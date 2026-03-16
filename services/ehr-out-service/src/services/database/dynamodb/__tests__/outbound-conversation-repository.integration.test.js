@@ -306,9 +306,9 @@ describe('outbound-conversation-repository', () => {
       await updateOutboundConversationStatus(conversationId, status);
 
       const outboundConversation = await getOutboundConversationById(conversationId);
-
+      const conversationStatus = outboundConversation.TransferStatus;
       // then
-      expect(outboundConversation.TransferStatus).toBe(status);
+      expect(conversationStatus).toBe(status);
     });
 
     it('should be able to store a failure reason if given', async () => {

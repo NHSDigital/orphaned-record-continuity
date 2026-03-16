@@ -44,10 +44,10 @@ jobs:
         working-directory: "./services/${{ inputs.service }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up JDK ${{ inputs.java_version }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "${{ inputs.java_version }}"
@@ -73,17 +73,17 @@ jobs:
         working-directory: "./services/${{ inputs.service }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up JDK ${{ inputs.java_version }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "${{ inputs.java_version }}"
           cache: gradle
 
       - name: Configure AWS Credentials (Read/Write)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.IAM_ROLE }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -137,11 +137,11 @@ jobs:
   deploy_infra:
     name: Deploy Infrastructure
     needs: [build_and_publish]
-    uses: nhsconnect/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@v3
-
+    uses: NHSDigital/orphaned-record-continuity-infrastructure/.github/workflows/deploy-stack.yml@v3
     with:
       stack: ${{ inputs.service }}
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
       ecr_alias: ${{ inputs.ecr_alias }}
+      git_ref: refs/tags/v3
     secrets: inherit
