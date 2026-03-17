@@ -11,8 +11,9 @@ on:
         required: true
 
 permissions:
+  pull-requests: write
   id-token: write
-  contents: write
+  contents: read
 
 jobs:
   create_release:
@@ -21,14 +22,14 @@ jobs:
     steps:
       - name: Validate Tag Format
         run: |
-          if [[ ! "${{ github.event.inputs.tag }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ ! "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Error: Tag must be in the format X.Y.Z (e.g. 1.0.0)"
             exit 1
           fi
       
       - name: Configure AWS Credentials
         id: credentials
-        uses: aws-actions/configure-aws-credentials@v8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
         with:
           role-to-assume: ${{ secrets.IAM_ROLE }}
           aws-region: ${{ vars.AWS_REGION }}
