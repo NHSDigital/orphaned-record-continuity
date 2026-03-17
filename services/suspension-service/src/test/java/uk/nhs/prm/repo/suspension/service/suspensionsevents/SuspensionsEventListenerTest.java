@@ -9,7 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.suspension.service.config.Tracer;
 import uk.nhs.prm.repo.suspension.service.pds.InvalidPdsRequestException;
 
-import javax.jms.JMSException;
+import jakarta.jms.JMSException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;

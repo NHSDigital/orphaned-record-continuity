@@ -1,9 +1,5 @@
 package uk.nhs.prm.repo.suspension.service.suspensionsevents;
 
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.PurgeQueueRequest;
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +12,10 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import uk.nhs.prm.repo.suspension.service.infra.LocalStackAwsConfig;
 
 import java.util.List;
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SuspensionsIntegrationTest {
 
     @Autowired
-    private AmazonSQSAsync sqs;
+    private SqsClient sqs;
 
     @Value("${aws.incomingQueueName}")
     private String suspensionsQueueName;
@@ -64,15 +64,17 @@ public class SuspensionsIntegrationTest {
     @BeforeEach
     public void setUp() {
         stubPdsAdaptor = initializeWebServer();
-        suspensionQueueUrl = sqs.getQueueUrl(suspensionsQueueName).getQueueUrl();
+        configureFor("localhost", stubPdsAdaptor.port());
+        suspensionQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
         purgeQueue(suspensionQueueUrl);
     }
+
 
     @AfterEach
     public void tearDown() {
         stubPdsAdaptor.resetAll();
         stubPdsAdaptor.stop();
-        suspensionQueueUrl = sqs.getQueueUrl(suspensionsQueueName).getQueueUrl();
+        suspensionQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
         purgeQueue(suspensionQueueUrl);
     }
 
@@ -91,59 +93,59 @@ public class SuspensionsIntegrationTest {
                         .withHeader("Content-Type", "application/json")
                         .withBody(getNotSuspendedResponseWith(nhsNumber))));
 
-        var queueUrl = sqs.getQueueUrl(suspensionsQueueName).getQueueUrl();
-        var notSuspendedQueueUrl = sqs.getQueueUrl(notSuspendedQueueName).getQueueUrl();
-        sqs.sendMessage(queueUrl, getSuspensionEventWith(nhsNumber));
+        var queueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
+        var notSuspendedQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(notSuspendedQueueName)).queueUrl();
+        sqs.sendMessage(builder -> builder.queueUrl(queueUrl).messageBody(getSuspensionEventWith(nhsNumber)));
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             List<Message> receivedMessageHolder = checkMessageInRelatedQueue(notSuspendedQueueUrl);
-            assertTrue(receivedMessageHolder.get(0).getBody().contains("NO_ACTION:NO_LONGER_SUSPENDED_ON_PDS"));
-            assertTrue(receivedMessageHolder.get(0).getBody().contains("nemsMessageId"));
-            assertTrue(receivedMessageHolder.get(0).getMessageAttributes().containsKey("traceId"));
+            assertTrue(receivedMessageHolder.get(0).body().contains("NO_ACTION:NO_LONGER_SUSPENDED_ON_PDS"));
+            assertTrue(receivedMessageHolder.get(0).body().contains("nemsMessageId"));
+            assertTrue(receivedMessageHolder.get(0).messageAttributes().containsKey("traceId"));
         });
         purgeQueue(notSuspendedQueueUrl);
     }
 
-     @Test
-     void shouldUpdateManagingOrganisationAndSendMessageToMofUpdatedSNSTopicForSuspendedPatient() {
-         var nhsNumber = Long.toString(System.currentTimeMillis());
-         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
-                 .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
-                 .willReturn(aResponse()
-                         .withHeader("Content-Type", "application/json")
-                         .withBody(getSuspendedResponseWith(nhsNumber))));
-         stubFor(put(urlMatching("/suspended-patient-status/" + nhsNumber))
-                 .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
-                 .willReturn(aResponse()
-                         .withHeader("Content-Type", "application/json")
-                         .withBody(getSuspendedResponseWith(nhsNumber))));
+    @Test
+    void shouldUpdateManagingOrganisationAndSendMessageToMofUpdatedSNSTopicForSuspendedPatient() {
+        var nhsNumber = Long.toString(System.currentTimeMillis());
+        stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
+                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(getSuspendedResponseWith(nhsNumber))));
+        stubFor(put(urlMatching("/suspended-patient-status/" + nhsNumber))
+                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(getSuspendedResponseWith(nhsNumber))));
 
-         var queueUrl = sqs.getQueueUrl(suspensionsQueueName).getQueueUrl();
-         var mofUpdatedQueueUrl = sqs.getQueueUrl(mofUpdatedQueueName).getQueueUrl();
-         var activeSuspensionsQueueUrl = sqs.getQueueUrl(activeSuspensionsQueueName).getQueueUrl();
-         sqs.sendMessage(queueUrl, getSuspensionEventWith(nhsNumber));
+        var queueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
+        var mofUpdatedQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(mofUpdatedQueueName)).queueUrl();
+        var activeSuspensionsQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(activeSuspensionsQueueName)).queueUrl();
+        sqs.sendMessage(builder -> builder.queueUrl(queueUrl).messageBody(getSuspensionEventWith(nhsNumber)));
 
-         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-             List<Message> receivedMessageHolder = checkMessageInRelatedQueue(mofUpdatedQueueUrl);
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            List<Message> receivedMessageHolder = checkMessageInRelatedQueue(mofUpdatedQueueUrl);
 
-             assertTrue(receivedMessageHolder.get(0).getBody().contains("ACTION:UPDATED_MANAGING_ORGANISATION"));
-             assertTrue(receivedMessageHolder.get(0).getBody().contains("TEST-NEMS-ID"));
-             assertTrue(receivedMessageHolder.get(0).getBody().contains("B85612"));
-             assertTrue(receivedMessageHolder.get(0).getMessageAttributes().containsKey("traceId"));
-         });
+            assertTrue(receivedMessageHolder.get(0).body().contains("ACTION:UPDATED_MANAGING_ORGANISATION"));
+            assertTrue(receivedMessageHolder.get(0).body().contains("TEST-NEMS-ID"));
+            assertTrue(receivedMessageHolder.get(0).body().contains("B85612"));
+            assertTrue(receivedMessageHolder.get(0).messageAttributes().containsKey("traceId"));
+        });
 
-         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-             List<Message> receivedMessageHolder = checkMessageInRelatedQueue(activeSuspensionsQueueUrl);
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            List<Message> receivedMessageHolder = checkMessageInRelatedQueue(activeSuspensionsQueueUrl);
 
-             assertTrue(receivedMessageHolder.get(0).getBody().contains("nhsNumber"));
-             assertTrue(receivedMessageHolder.get(0).getBody().contains("B85612"));
-             assertTrue(receivedMessageHolder.get(0).getBody().contains("2017-11-01T15:00:33+00:00"));
-             assertTrue(receivedMessageHolder.get(0).getMessageAttributes().containsKey("traceId"));
-         });
+            assertTrue(receivedMessageHolder.get(0).body().contains("nhsNumber"));
+            assertTrue(receivedMessageHolder.get(0).body().contains("B85612"));
+            assertTrue(receivedMessageHolder.get(0).body().contains("2017-11-01T15:00:33+00:00"));
+            assertTrue(receivedMessageHolder.get(0).messageAttributes().containsKey("traceId"));
+        });
 
-         purgeQueue(mofUpdatedQueueUrl);
-         purgeQueue(activeSuspensionsQueueUrl);
-     }
+        purgeQueue(mofUpdatedQueueUrl);
+        purgeQueue(activeSuspensionsQueueUrl);
+    }
 
     @Test
     void shouldPutEventOutOfOrderInRelevantQueues() {
@@ -160,26 +162,26 @@ public class SuspensionsIntegrationTest {
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponseWith(nhsNumber))));
 
-        var queueUrl = sqs.getQueueUrl(suspensionsQueueName).getQueueUrl();
-        var mofUpdatedQueueUrl = sqs.getQueueUrl(mofUpdatedQueueName).getQueueUrl();
-        var eventOutOfOrderQueue = sqs.getQueueUrl(eventOutOfOrderQueueName).getQueueUrl();
+        var queueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
+        var mofUpdatedQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(mofUpdatedQueueName)).queueUrl();
+        var eventOutOfOrderQueue = sqs.getQueueUrl(builder -> builder.queueName(eventOutOfOrderQueueName)).queueUrl();
 
         var suspensionEvent = getSuspensionEventWith(nhsNumber);
-        sqs.sendMessage(queueUrl, suspensionEvent);
+        sqs.sendMessage(builder -> builder.queueUrl(queueUrl).messageBody(suspensionEvent));
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             var receivedMessageHolder = checkMessageInRelatedQueue(mofUpdatedQueueUrl);
-            assertTrue(receivedMessageHolder.get(0).getBody().contains("B85612"));
+            assertTrue(receivedMessageHolder.get(0).body().contains("B85612"));
         });
 
         var nemsMessageId = "OUT-OF-ORDER-ID";
         var secondSuspensionEvent = getSuspensionEventWith(nhsNumber, nemsMessageId);
 
-        sqs.sendMessage(queueUrl, secondSuspensionEvent);
+        sqs.sendMessage(builder -> builder.queueUrl(queueUrl).messageBody(secondSuspensionEvent));
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             var receivedMessageInObservabilityQueue = checkMessageInRelatedQueue(eventOutOfOrderQueue);
-            assertTrue(receivedMessageInObservabilityQueue.get(0).getBody().contains(nemsMessageId));
+            assertTrue(receivedMessageInObservabilityQueue.get(0).body().contains(nemsMessageId));
         });
 
         purgeQueue(mofUpdatedQueueUrl);
@@ -200,27 +202,27 @@ public class SuspensionsIntegrationTest {
                         .withStatus(400)
                         .withHeader("Content-Type", "application/json")));
 
-        var queueUrl = sqs.getQueueUrl(suspensionsQueueName).getQueueUrl();
-        var invalidSuspensionQueueUrl = sqs.getQueueUrl(invalidSuspensionQueueName).getQueueUrl();
-        var nonSensitiveInvalidSuspensionQueueUrl = sqs.getQueueUrl(invalidSuspensionAuditQueueName).getQueueUrl();
-        sqs.sendMessage(queueUrl, getSuspensionEventWith(nhsNumber));
+        var queueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
+        var invalidSuspensionQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(invalidSuspensionQueueName)).queueUrl();
+        var nonSensitiveInvalidSuspensionQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(invalidSuspensionAuditQueueName)).queueUrl();
+        sqs.sendMessage(builder -> builder.queueUrl(queueUrl).messageBody(getSuspensionEventWith(nhsNumber)));
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             List<Message> receivedMessageHolderForInvalidSuspensions = checkMessageInRelatedQueue(invalidSuspensionQueueUrl);
 
-            assertTrue(receivedMessageHolderForInvalidSuspensions.get(0).getBody().contains("nhsNumber"));
-            assertTrue(receivedMessageHolderForInvalidSuspensions.get(0).getBody().contains(nhsNumber));
-            assertTrue(receivedMessageHolderForInvalidSuspensions.get(0).getBody().contains("B85612"));
-            assertTrue(receivedMessageHolderForInvalidSuspensions.get(0).getBody().contains("TEST-NEMS-ID"));
-            assertTrue(receivedMessageHolderForInvalidSuspensions.get(0).getMessageAttributes().containsKey("traceId"));
+            assertTrue(receivedMessageHolderForInvalidSuspensions.get(0).body().contains("nhsNumber"));
+            assertTrue(receivedMessageHolderForInvalidSuspensions.get(0).body().contains(nhsNumber));
+            assertTrue(receivedMessageHolderForInvalidSuspensions.get(0).body().contains("B85612"));
+            assertTrue(receivedMessageHolderForInvalidSuspensions.get(0).body().contains("TEST-NEMS-ID"));
+            assertTrue(receivedMessageHolderForInvalidSuspensions.get(0).messageAttributes().containsKey("traceId"));
 
         });
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             List<Message> receivedMessageHolderForNonSensitiveInvalidSuspensions = checkMessageInRelatedQueue(nonSensitiveInvalidSuspensionQueueUrl);
 
-            assertTrue(receivedMessageHolderForNonSensitiveInvalidSuspensions.get(0).getBody().contains("NO_ACTION:INVALID_SUSPENSION"));
-            assertTrue(receivedMessageHolderForNonSensitiveInvalidSuspensions.get(0).getBody().contains("TEST-NEMS-ID"));
+            assertTrue(receivedMessageHolderForNonSensitiveInvalidSuspensions.get(0).body().contains("NO_ACTION:INVALID_SUSPENSION"));
+            assertTrue(receivedMessageHolderForNonSensitiveInvalidSuspensions.get(0).body().contains("TEST-NEMS-ID"));
         });
 
         purgeQueue(invalidSuspensionQueueUrl);
@@ -231,10 +233,11 @@ public class SuspensionsIntegrationTest {
     private List<Message> checkMessageInRelatedQueue(String queueUrl) {
         System.out.println("checking sqs queue: " + queueUrl);
 
-        var requestForMessagesWithAttributes
-                = new ReceiveMessageRequest().withQueueUrl(queueUrl)
-                .withMessageAttributeNames("traceId");
-        List<Message> messages = sqs.receiveMessage(requestForMessagesWithAttributes).getMessages();
+        var requestForMessagesWithAttributes = ReceiveMessageRequest.builder()
+                .queueUrl(queueUrl)
+                .messageAttributeNames("traceId")
+                .build();
+        List<Message> messages = sqs.receiveMessage(requestForMessagesWithAttributes).messages();
         System.out.printf("Found %s messages on queue: %s%n", messages.size(), queueUrl);
         assertThat(messages).hasSize(1);
         return messages;
@@ -276,6 +279,6 @@ public class SuspensionsIntegrationTest {
 
     private void purgeQueue(String queueUrl) {
         System.out.println("Purging queue url: " + queueUrl);
-        sqs.purgeQueue(new PurgeQueueRequest(queueUrl));
+        sqs.purgeQueue(PurgeQueueRequest.builder().queueUrl(queueUrl).build());
     }
 }

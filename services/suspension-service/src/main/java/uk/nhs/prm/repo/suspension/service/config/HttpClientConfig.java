@@ -16,7 +16,7 @@ import org.apache.hc.core5.http.message.BasicHeaderElementIterator;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
-import org.apache.http.protocol.HTTP;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -77,7 +77,9 @@ public class HttpClientConfig {
     @Bean
     public ConnectionKeepAliveStrategy connectionKeepAliveStrategy() {
         return (response, context) -> {
-            BasicHeaderElementIterator it = new BasicHeaderElementIterator(response.headerIterator(HTTP.CONN_KEEP_ALIVE));
+            BasicHeaderElementIterator it =
+                    new BasicHeaderElementIterator(response.headerIterator(HttpHeaders.KEEP_ALIVE));
+
 
             while (it.hasNext()) {
                 HeaderElement headerElement = it.next();

@@ -1,11 +1,5 @@
 package uk.nhs.prm.repo.suspension.service.infra;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
-import com.amazonaws.services.sqs.model.GetQueueAttributesResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -23,6 +17,10 @@ import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.CreateTopicRequest;
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse;
 import software.amazon.awssdk.services.sns.model.SubscribeRequest;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
@@ -31,12 +29,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 @TestConfiguration
 public class LocalStackAwsConfig {
 
     @Autowired
-    private AmazonSQSAsync amazonSQSAsync;
+    private SqsClient sqsClient;
 
     @Autowired
     private SnsClient snsClient;
@@ -75,10 +72,12 @@ public class LocalStackAwsConfig {
     private String activeSuspensionsQueueName;
 
     @Bean
-    public static AmazonSQSAsync amazonSQSAsync(@Value("${localstack.url}") String localstackUrl) {
-        return AmazonSQSAsyncClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIA5678901234567890", "LSIA5678901234567890")))
-                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
+    public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) {
+        return SqsClient.builder()
+                .endpointOverride(URI.create(localstackUrl))
+                .region(Region.EU_WEST_2)
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create("LSIA5678901234567890", "LSIA5678901234567890")))
                 .build();
     }
 
@@ -127,22 +126,23 @@ public class LocalStackAwsConfig {
         return CloudWatchClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
                 .region(Region.EU_WEST_2)
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
                 .build();
     }
 
     @PostConstruct
     public void setupTestQueuesAndTopics() {
-        amazonSQSAsync.createQueue(suspensionsQueueName);
-        amazonSQSAsync.createQueue(ackQueueName);
-        var notSuspendedQueue = amazonSQSAsync.createQueue(notSuspendedQueueName);
-        var mofUpdatedQueue = amazonSQSAsync.createQueue(mofUpdatedQueueName);
-        var eventOutOfOrderQueue = amazonSQSAsync.createQueue(eventOutOfOrderQueueName);
-        var invalidSuspensionQueue = amazonSQSAsync.createQueue(invalidSuspensionQueueName);
-        var invalidSuspensionAuditQueue = amazonSQSAsync.createQueue(invalidSuspensionAuditQueueName);
-        var incomingQueue = amazonSQSAsync.createQueue(repoIncomingQueueName);
-        //Queue created in re-registration service, only used here for checking that message is received on active-suspensions topic
-        var activeSuspensionsQueue = amazonSQSAsync.createQueue(activeSuspensionsQueueName);
+        sqsClient.createQueue(builder -> builder.queueName(suspensionsQueueName));
+        sqsClient.createQueue(builder -> builder.queueName(ackQueueName));
+        CreateQueueResponse notSuspendedQueue = sqsClient.createQueue(builder -> builder.queueName(notSuspendedQueueName));
+        CreateQueueResponse mofUpdatedQueue = sqsClient.createQueue(builder -> builder.queueName(mofUpdatedQueueName));
+        CreateQueueResponse eventOutOfOrderQueue = sqsClient.createQueue(builder -> builder.queueName(eventOutOfOrderQueueName));
+        CreateQueueResponse invalidSuspensionQueue = sqsClient.createQueue(builder -> builder.queueName(invalidSuspensionQueueName));
+        CreateQueueResponse invalidSuspensionAuditQueue = sqsClient.createQueue(builder -> builder.queueName(invalidSuspensionAuditQueueName));
+        CreateQueueResponse incomingQueue = sqsClient.createQueue(builder -> builder.queueName(repoIncomingQueueName));
+        // Queue created in re-registration service, only used here for checking that message is received on active-suspensions topic
+        CreateQueueResponse activeSuspensionsQueue = sqsClient.createQueue(builder -> builder.queueName(activeSuspensionsQueueName));
 
         var topic = snsClient.createTopic(CreateTopicRequest.builder().name("test_not_suspended_topic").build());
         var mofUpdatedTopic = snsClient.createTopic(CreateTopicRequest.builder().name("mof_updated_sns_topic").build());
@@ -152,19 +152,18 @@ public class LocalStackAwsConfig {
         var repoIncomingTopic = snsClient.createTopic(CreateTopicRequest.builder().name("repo_incoming_sns_topic").build());
         var activeSuspensionsTopic = snsClient.createTopic(CreateTopicRequest.builder().name("active_suspensions_sns_topic").build());
 
-        createSnsTestReceiverSubscription(topic, getQueueArn(notSuspendedQueue.getQueueUrl()));
-        createSnsTestReceiverSubscription(mofUpdatedTopic, getQueueArn(mofUpdatedQueue.getQueueUrl()));
-        createSnsTestReceiverSubscription(eventOutOfOrderTopic, getQueueArn(eventOutOfOrderQueue.getQueueUrl()));
-        createSnsTestReceiverSubscription(invalidSuspensionTopic, getQueueArn(invalidSuspensionQueue.getQueueUrl()));
-        createSnsTestReceiverSubscription(nonSensitiveInvalidSuspensionTopic, getQueueArn(invalidSuspensionAuditQueue.getQueueUrl()));
-        createSnsTestReceiverSubscription(repoIncomingTopic, getQueueArn(incomingQueue.getQueueUrl()));
-        createSnsTestReceiverSubscription(activeSuspensionsTopic, getQueueArn(activeSuspensionsQueue.getQueueUrl()));
+        createSnsTestReceiverSubscription(topic, getQueueArn(notSuspendedQueue.queueUrl()));
+        createSnsTestReceiverSubscription(mofUpdatedTopic, getQueueArn(mofUpdatedQueue.queueUrl()));
+        createSnsTestReceiverSubscription(eventOutOfOrderTopic, getQueueArn(eventOutOfOrderQueue.queueUrl()));
+        createSnsTestReceiverSubscription(invalidSuspensionTopic, getQueueArn(invalidSuspensionQueue.queueUrl()));
+        createSnsTestReceiverSubscription(nonSensitiveInvalidSuspensionTopic, getQueueArn(invalidSuspensionAuditQueue.queueUrl()));
+        createSnsTestReceiverSubscription(repoIncomingTopic, getQueueArn(incomingQueue.queueUrl()));
+        createSnsTestReceiverSubscription(activeSuspensionsTopic, getQueueArn(activeSuspensionsQueue.queueUrl()));
 
         setupDbAndTable();
     }
 
     private void setupDbAndTable() {
-
         var waiter = dynamoDbClient.waiter();
         var tableRequest = DescribeTableRequest.builder()
                 .tableName(suspensionDynamoDbTableName)
@@ -173,7 +172,6 @@ public class LocalStackAwsConfig {
         if (dynamoDbClient.listTables().tableNames().contains(suspensionDynamoDbTableName)) {
             resetTableForLocalEnvironment(waiter, tableRequest);
         }
-
 
         List<KeySchemaElement> keySchema = new ArrayList<>();
         keySchema.add(KeySchemaElement.builder()
@@ -221,7 +219,10 @@ public class LocalStackAwsConfig {
     }
 
     private String getQueueArn(String queueUrl) {
-        GetQueueAttributesResult queueAttributes = amazonSQSAsync.getQueueAttributes(queueUrl, List.of("QueueArn"));
-        return queueAttributes.getAttributes().get("QueueArn");
+        var queueAttributes = sqsClient.getQueueAttributes(GetQueueAttributesRequest.builder()
+                .queueUrl(queueUrl)
+                .attributeNames(QueueAttributeName.QUEUE_ARN)
+                .build());
+        return queueAttributes.attributes().get(QueueAttributeName.QUEUE_ARN);
     }
 }

@@ -28,30 +28,6 @@ source $AWS_HELPERS_FILE
 # Instance (Environment) Variables #
 ####################################
 
-function check_env {
-  if [[ -z "${NHS_ENVIRONMENT}" ]]; then
-    echo "Must set NHS_ENVIRONMENT"
-    exit 1
-  fi
-
-  if [[ -z "${NHS_SERVICE}" ]]; then
-    echo "Must set NHS_SERVICE"
-    exit 1
-  fi
-}
-
-function set_image_tag() {
-  if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
-    export IMAGE_TAG=${GO_PIPELINE_LABEL:-$(git rev-parse HEAD | cut -c 1-8)}
-  else
-    export IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
-  fi
-}
-
-function get_aws_account_id {
-    AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
-}
-
 function configure_envs {
   export LOCALSTACK_URL="http://localhost:4566"
   export AWS_REGION="eu-west-2"
@@ -72,44 +48,6 @@ function configure_sonar_environment_variable {
 # Terraform Functions #
 #######################
 
-function tf_init {
-  check_env
-  cd terraform
-
-  terraform init -reconfigure \
-    -backend-config key="${NHS_SERVICE}-${NHS_ENVIRONMENT}/terraform.tfstate" \
-    -backend-config bucket="prm-deductions-${NHS_ENVIRONMENT}-terraform-state" \
-    -backend-config dynamodb_table="prm-deductions-${NHS_ENVIRONMENT}-terraform-table" \
-    -backend-config region=${AWS_DEFAULT_REGION}
-}
-
-function tf_plan {
-  operation=$1
-
-  if [[ -z "${IMAGE_TAG}" ]]; then
-    set_image_tag
-  fi
-
-  tf_init
-
-  terraform get # modules
-  if [[ "${operation}" == "create" ]]; then
-    terraform plan -var task_image_tag=$IMAGE_TAG -var-file="configs/${NHS_SERVICE}/${NHS_SERVICE}.tfvars" -var-file="configs/${NHS_SERVICE}/$NHS_ENVIRONMENT.tfvars" -out="${NHS_SERVICE}.tfplan"
-  elif [[ "${operation}" == "destroy" ]]; then
-    terraform plan -var task_image_tag=$IMAGE_TAG -var-file="configs/${NHS_SERVICE}/${NHS_SERVICE}.tfvars" -var-file="configs/${NHS_SERVICE}/$NHS_ENVIRONMENT.tfvars" -out="${NHS_SERVICE}.tfplan" -destroy
-  else
-    echo "Unknown operation (should be create or destroy), got: ${operation}"
-    exit 1
-  fi
-}
-
-function tf_apply {
-  tf_init
-  terraform get # modules
-  terraform apply ${NHS_SERVICE}.tfplan
-  terraform output -json > tf-out.json
-}
-
 function configure_local_envs {
   export LOCALSTACK_URL="http://localhost:4566"
   export AWS_REGION="eu-west-2"
@@ -126,7 +64,7 @@ function start_localstack {
   docker compose -f docker-compose.localstack-local.yaml up -d
 }
 
-function destroy_localstack {
+function stop_localstack {
   echo docker processes running: $(docker ps)
 
   DOCKER_CONTAINERS_ON_PORT=$(docker ps --filter publish=4566 -q)
@@ -147,8 +85,11 @@ function destroy_localstack {
 
 command="$1"
 case "${command}" in
-  destroy_localstack)
-      destroy_localstack
+  start_localstack)
+      start_localstack
+      ;;
+  stop_localstack)
+      stop_localstack
       ;;
   build_docker)
       configure_envs
@@ -168,66 +109,33 @@ case "${command}" in
       ;;
   test_integration)
       configure_envs
+      start_localstack
       ./gradlew --info integration
+      stop_localstack
       ;;
   test_coverage)
       configure_envs
-      destroy_localstack
+      start_localstack
       ./gradlew jacocoTestCoverageVerification
+      stop_localstack
       ;;
   code_quality)
-      destroy_localstack
+      start_localstack
       ./gradlew check -x test -x integration
+      stop_localstack
       ;;
   test_all)
       configure_envs
+      start_localstack
       ./gradlew clean test integration jacocoTestCoverageVerification check
+      stop_localstack
       ;;
   run_local)
       configure_envs
       ./gradlew bootRun
       ;;
-  start_localstack)
-      start_localstack
-      ;;
-  tf)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_init
-      bash
-      ;;
-  tf_plan_suspension)
-      export NHS_SERVICE=suspension-service
-      check_env
-      export NHS_SERVICE=suspension-service
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_plan $2
-      ;;
-  tf_plan)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_plan $2
-      ;;
-  tf_apply)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_apply
-      ;;
-  promote_docker_image)
-      check_env
-      set_image_tag
-      promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
-      ;;
-  wait_ecs)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      aws ecs wait services-stable \
-        --region $AWS_DEFAULT_REGION \
-        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
-        --service $NHS_ENVIRONMENT-${NHS_SERVICE}
-      ;;
   run_sonar)
-      destroy_localstack
+      stop_localstack
       _assume_environment_role $NHS_ENVIRONMENT
       configure_envs
       configure_sonar_environment_variable

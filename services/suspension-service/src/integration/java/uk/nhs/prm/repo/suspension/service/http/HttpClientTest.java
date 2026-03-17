@@ -31,6 +31,8 @@ public class HttpClientTest {
     @BeforeEach
     public void setUp() {
         wireMockServer = initializeWebServer();
+        configureFor("localhost", wireMockServer.port());
+
     }
 
     @Test

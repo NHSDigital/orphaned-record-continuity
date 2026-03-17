@@ -1,15 +1,13 @@
 plugins {
-    id 'org.springframework.boot' version '3.2.2'
+    id 'org.springframework.boot' version '3.5.11'
     id 'io.spring.dependency-management' version '1.1.4'
     id 'java'
     id 'jacoco'
-    id 'com.github.spotbugs' version '6.0.6'
-    id 'org.sonarqube' version '4.3.1.3277'
+    id 'org.sonarqube' version '7.2.2.6593'
 }
 
 group = 'uk.nhs.prm.repo'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '21'
 
 configurations {
     compileOnly {
@@ -21,61 +19,54 @@ repositories {
     mavenCentral()
 }
 
-//Without this task two jars are built, the additional "-plain.jar" is not needed
-// for more details refer to: https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#packaging-executable.and-plain-archives
-jar {
-    enabled = false
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-json'
+    implementation 'org.springframework:spring-jms'
 
-    implementation 'org.yaml:snakeyaml:2.2'
-    implementation('io.netty:netty-buffer') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-codec') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-codec-http') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-codec-http2') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-common') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-handler') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-resolver') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-transport') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-transport-classes-epoll') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-transport-native-epoll') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-transport-native-unix-common') { version { strictly '4.1.104.Final' } }
+    implementation 'org.yaml:snakeyaml:2.5'
+    implementation('io.netty:netty-buffer') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-codec') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-codec-http') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-codec-http2') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-common') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-handler') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-resolver') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-transport') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-transport-classes-epoll') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-transport-native-epoll') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-transport-native-unix-common') { version { strictly '4.2.9.Final' } }
 
-    implementation platform('software.amazon.awssdk:bom:2.18.41')
+    implementation platform('software.amazon.awssdk:bom:2.41.14')
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:sns'
     implementation 'software.amazon.awssdk:sqs'
     implementation 'software.amazon.awssdk:dynamodb'
 
-    // TODO: Once we upgrade amazon-sqs-java-messaging-lib to v2 we can remove aws-java-sdk-core and sqs.
-    implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:1.1.2'
-    implementation 'com.amazonaws:aws-java-sdk-core:1.12.368'
-    implementation 'com.amazonaws:aws-java-sdk-sqs:1.12.368'
-    implementation 'com.google.code.gson:gson:2.10.1'
-    implementation 'com.google.guava:guava:33.0.0-jre'
-    implementation 'io.github.resilience4j:resilience4j-retry:1.7.1'
-    implementation 'org.springframework:spring-jms:5.3.19'
-    implementation 'com.github.spotbugs:spotbugs-annotations:4.8.3'
-    implementation 'org.apache.bcel:bcel:6.6.1'
-    // Explicit declaration to override outdated dependency on httpclient - outdated as of Spring Boot >3.0.0
-    // TODO We plan to replace the HTTP calls on this service with Lambda calls soon, this can be removed at this point
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3'
-    implementation 'commons-fileupload:commons-fileupload:1.5'
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.0.1'
+    implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:2.1.4'
+    implementation 'com.google.code.gson:gson:2.13.2'
+    implementation 'com.google.guava:guava:33.5.0-jre'
+    implementation 'io.github.resilience4j:resilience4j-retry:2.3.0'
+    implementation 'org.apache.bcel:bcel:6.12.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
+    implementation 'commons-fileupload:commons-fileupload:1.6.0'
+    implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
 
-    compileOnly 'org.projectlombok:lombok:1.18.30'
+    compileOnly 'org.projectlombok:lombok:1.18.42'
 
     annotationProcessor 'org.projectlombok:lombok'
 
-    testImplementation 'org.awaitility:awaitility:4.2.0'
+    testImplementation 'org.awaitility:awaitility:4.3.0'
     testImplementation 'org.springframework.boot:spring-boot-test'
     testImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-aop'
-    testImplementation 'org.mockito:mockito-core:3.+'
-    testImplementation 'org.wiremock:wiremock-standalone:3.3.1'
+    testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
 }
 
 test {
@@ -129,39 +120,6 @@ jacocoTestCoverageVerification {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: '**/model/**')
         }))
-    }
-}
-
-spotbugsMain {
-    ignoreFailures = true
-    reports {
-        html {
-            enabled = true
-            destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
-        }
-    }
-}
-
-spotbugsTest {
-    ignoreFailures = true
-    reports {
-        html {
-            enabled = true
-            destination = file("$buildDir/reports/spotbugs/test/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
-        }
-    }
-}
-
-spotbugsIntegration {
-    ignoreFailures = true
-    reports {
-        html {
-            enabled = true
-            destination = file("$buildDir/reports/spotbugs/integration/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
-        }
     }
 }
 

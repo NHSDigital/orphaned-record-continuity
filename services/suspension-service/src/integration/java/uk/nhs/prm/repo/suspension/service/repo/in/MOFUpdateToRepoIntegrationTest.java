@@ -1,9 +1,5 @@
 package uk.nhs.prm.repo.suspension.service.repo.in;
 
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.PurgeQueueRequest;
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +12,10 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import uk.nhs.prm.repo.suspension.service.infra.LocalStackAwsConfig;
 import uk.nhs.prm.repo.suspension.service.suspensionsevents.SuspensionEventBuilder;
 
@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(properties = "toggle.canUpdateManagingOrganisationToRepo=true")
@@ -36,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class MOFUpdateToRepoIntegrationTest {
 
     @Autowired
-    private AmazonSQSAsync sqs;
+    private SqsClient sqs;
 
     @Value("${aws.incomingQueueName}")
     private String suspensionsQueueName;
@@ -51,7 +50,8 @@ public class MOFUpdateToRepoIntegrationTest {
     @BeforeEach
     public void setUp() {
         stubPdsAdaptor = initializeWebServer();
-        suspensionQueueUrl = sqs.getQueueUrl(suspensionsQueueName).getQueueUrl();
+        configureFor("localhost", stubPdsAdaptor.port());
+        suspensionQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
         purgeQueue(suspensionQueueUrl);
     }
 
@@ -59,7 +59,7 @@ public class MOFUpdateToRepoIntegrationTest {
     public void tearDown() {
         stubPdsAdaptor.resetAll();
         stubPdsAdaptor.stop();
-        suspensionQueueUrl = sqs.getQueueUrl(suspensionsQueueName).getQueueUrl();
+        suspensionQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
         purgeQueue(suspensionQueueUrl);
     }
 
@@ -70,7 +70,7 @@ public class MOFUpdateToRepoIntegrationTest {
     }
 
     @Test
-    void shouldSetMOFAsRepoOdsCodeWhenToggleOn(){
+    void shouldSetMOFAsRepoOdsCodeWhenToggleOn() {
         var nhsNumber = Long.toString(System.currentTimeMillis());
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
                 .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
@@ -83,31 +83,30 @@ public class MOFUpdateToRepoIntegrationTest {
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponseWithRepoOdsCode(nhsNumber))));
 
-
-        var queueUrl = sqs.getQueueUrl(suspensionsQueueName).getQueueUrl();
-        var repoIncomingQueueUrl = sqs.getQueueUrl(repoIncomingQueueName).getQueueUrl();
+        var queueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
+        var repoIncomingQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(repoIncomingQueueName)).queueUrl();
         purgeQueue(repoIncomingQueueUrl);
-        sqs.sendMessage(queueUrl, getSuspensionEventWith(nhsNumber));
+        sqs.sendMessage(builder -> builder.queueUrl(queueUrl).messageBody(getSuspensionEventWith(nhsNumber)));
         System.out.println("Sent message to queue url " + queueUrl);
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             List<Message> receivedMessageHolder = checkMessageInRelatedQueue(repoIncomingQueueUrl);
 
-            assertTrue(receivedMessageHolder.get(0).getBody().contains("TEST-NEMS-ID"));
-            assertTrue(receivedMessageHolder.get(0).getBody().contains("A1234"));
-            assertTrue(receivedMessageHolder.get(0).getBody().contains("nemsEventLastUpdated"));
-            assertTrue(receivedMessageHolder.get(0).getMessageAttributes().containsKey("traceId"));
-
+            assertTrue(receivedMessageHolder.get(0).body().contains("TEST-NEMS-ID"));
+            assertTrue(receivedMessageHolder.get(0).body().contains("A1234"));
+            assertTrue(receivedMessageHolder.get(0).body().contains("nemsEventLastUpdated"));
+            assertTrue(receivedMessageHolder.get(0).messageAttributes().containsKey("traceId"));
         });
     }
 
     private List<Message> checkMessageInRelatedQueue(String queueUrl) {
         System.out.println("checking sqs queue: " + queueUrl);
 
-        var requestForMessagesWithAttributes
-                = new ReceiveMessageRequest().withQueueUrl(queueUrl)
-                .withMessageAttributeNames("traceId");
-        List<Message> messages = sqs.receiveMessage(requestForMessagesWithAttributes).getMessages();
+        var requestForMessagesWithAttributes = ReceiveMessageRequest.builder()
+                .queueUrl(queueUrl)
+                .messageAttributeNames("traceId")
+                .build();
+        List<Message> messages = sqs.receiveMessage(requestForMessagesWithAttributes).messages();
         System.out.printf("Found %s messages on queue: %s%n", messages.size(), queueUrl);
         assertThat(messages).hasSize(1);
         return messages;
@@ -151,6 +150,6 @@ public class MOFUpdateToRepoIntegrationTest {
 
     private void purgeQueue(String queueUrl) {
         System.out.println("Purging queue url: " + queueUrl);
-        sqs.purgeQueue(new PurgeQueueRequest(queueUrl));
+        sqs.purgeQueue(PurgeQueueRequest.builder().queueUrl(queueUrl).build());
     }
 }

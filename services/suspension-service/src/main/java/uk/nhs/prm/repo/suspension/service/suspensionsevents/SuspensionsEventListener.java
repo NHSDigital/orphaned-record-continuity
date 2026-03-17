@@ -5,10 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import uk.nhs.prm.repo.suspension.service.config.Tracer;
 import uk.nhs.prm.repo.suspension.service.pds.InvalidPdsRequestException;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.TextMessage;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.MessageListener;
+import jakarta.jms.TextMessage;
 
 @Slf4j
 @RequiredArgsConstructor
