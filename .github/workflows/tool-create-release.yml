@@ -19,6 +19,8 @@ jobs:
   create_release:
     name: Create Release
     runs-on: ubuntu-latest
+    env:
+      tag: ${{ inputs.tag }}
     steps:
       - name: Validate Tag Format
         run: |
@@ -43,8 +45,8 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github@github.com"
-          git tag ${{ github.event.inputs.tag }}
-          git push origin ${{ github.event.inputs.tag }}
+          git tag $tag
+          git push origin $tag
 
       - name: Full Deployment
         uses: ./.github/workflows/full-deployment.yml
@@ -56,7 +58,6 @@ jobs:
       - name: Re-tag ECR Images with Release Tag
         env:
           IMAGE_SHA: ${{ github.sha }}
-          IMAGE_TAG: ${{ inputs.tag }}
         run: |
           repo-list=['deductions/ehr-out-service', 
                       'deductions/ehr-repo', 
@@ -70,8 +71,8 @@ jobs:
           for repo in "${repo-list[@]}"; do
             repo=${{ steps.credentials.outputs.aws-account-id }}.dkr.ecr.eu-west-2.amazonaws.com/$repo
             docker pull $repo:$IMAGE_SHA
-            docker tag $repo:$IMAGE_SHA $repo:$IMAGE_TAG
-            docker push $repo:$IMAGE_TAG
+            docker tag $repo:$IMAGE_SHA $repo:$tag
+            docker push $repo:$tag
           done
 
           
