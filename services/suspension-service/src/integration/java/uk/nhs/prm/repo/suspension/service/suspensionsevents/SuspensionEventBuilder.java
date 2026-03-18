@@ -1,7 +1,7 @@
 package uk.nhs.prm.repo.suspension.service.suspensionsevents;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 public class SuspensionEventBuilder {
@@ -39,7 +39,7 @@ public class SuspensionEventBuilder {
     private String toJson(ImmutableMap<String, String> messageData) {
         try {
             return new ObjectMapper().writeValueAsString(messageData);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

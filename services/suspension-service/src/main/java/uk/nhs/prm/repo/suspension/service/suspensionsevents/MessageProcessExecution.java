@@ -1,9 +1,9 @@
 package uk.nhs.prm.repo.suspension.service.suspensionsevents;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
 import uk.nhs.prm.repo.suspension.service.config.MessageProcessProperties;
 import uk.nhs.prm.repo.suspension.service.data.LastUpdatedEventService;
 import uk.nhs.prm.repo.suspension.service.model.PdsAdaptorSuspensionStatusResponse;
@@ -85,7 +85,7 @@ public class MessageProcessExecution {
     private SuspensionEvent getSuspensionEvent(String suspensionMessage) {
         try {
             return parser.parse(suspensionMessage);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Got an exception while parsing suspensions message");
             messagePublisherBroker.invalidMessage(suspensionMessage, null);
             throw new InvalidSuspensionMessageException("Encountered an invalid message", e);
@@ -97,11 +97,6 @@ public class MessageProcessExecution {
         log.info(isNonSynthetic ? "Processing Non-Synthetic Patient" : "Processing Synthetic Patient");
         return isNonSynthetic;
     }
-
-
-//    private boolean patientIsSafeListed(SuspensionEvent suspensionEvent) {
-//        return this.config.getAllowedPatientsNhsNumbers() != null && this.config.getAllowedPatientsNhsNumbers().contains(suspensionEvent.nhsNumber());
-//    }
 
     private boolean processingOnlySyntheticPatients() {
         log.info("Process only synthetic patients: " + this.config.getProcessOnlySyntheticPatients());

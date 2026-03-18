@@ -53,7 +53,7 @@ public class HttpClientTest {
                 "some request payload");
 
         assertThat(responsePayload.getBody()).isEqualTo("some body");
-        assertThat(responsePayload.getStatusCodeValue()).isEqualTo(203);
+        assertThat(responsePayload.getStatusCode().value()).isEqualTo(203);
     }
 
     @Test
@@ -71,8 +71,7 @@ public class HttpClientTest {
                 "bob",
                 "banana");
 
-        assertThat(response.getStatusCodeValue()).isEqualTo(202);
-    }
+        assertThat(response.getStatusCode().value()).isEqualTo(202);    }
 
 
     @Test
