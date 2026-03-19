@@ -49,6 +49,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag $tag
           git push origin $tag
+          echo "Debugging: List all files in the current directory"
+          ls -la
 
       - name: Full Deployment
         uses: ./.github/workflows/full-deployment.yml
