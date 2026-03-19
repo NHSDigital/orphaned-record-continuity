@@ -76,18 +76,21 @@ jobs:
         env:
           IMAGE_SHA: ${{ github.sha }}
         run: |
-          repo-list=['deductions/ehr-out-service', 
-                      'deductions/ehr-repo', 
-                      'deductions/ehr-transfer-service', 
-                      'deductions/gp2gp-messenger', 
-                      'deductions/mesh-forwarder', 
-                      'deductions/nems-event-processor', 
-                      'deductions/pds-adaptor', 
-                      'repo/re-registration-service', 
-                      'repo/suspension-service']
-          for repo in "${repo-list[@]}"; do
-            repo=${{ steps.credentials.outputs.aws-account-id }}.dkr.ecr.eu-west-2.amazonaws.com/$repo
-            docker pull $repo:$IMAGE_SHA
-            docker tag $repo:$IMAGE_SHA $repo:$tag
-            docker push $repo:$tag
+          repo_list=("deductions/ehr-out-service"
+            "deductions/ehr-repo"
+            "deductions/ehr-transfer-service"
+            "deductions/gp2gp-messenger"
+            "deductions/mesh-forwarder"
+            "deductions/nems-event-processor"
+            "deductions/pds-adaptor"
+            "repo/re-registration-service"
+            "repo/suspension-service"
+          )
+
+          for repo in "${repo_list[@]}"; do
+            full_repo="${{ steps.credentials.outputs.aws-account-id }}.dkr.ecr.eu-west-2.amazonaws.com/${repo}"
+
+            docker pull "${full_repo}:${IMAGE_SHA}"
+            docker tag "${full_repo}:${IMAGE_SHA}" "${full_repo}:${tag}"
+            docker push "${full_repo}:${tag}"
           done
