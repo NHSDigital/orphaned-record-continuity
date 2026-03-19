@@ -48,6 +48,9 @@ jobs:
           git push origin $tag
           echo "Debugging: List all files in the current directory"
           ls -la
+          cd .github/workflows
+          echo "Debugging: List all files in the .github/workflows directory"
+          ls -la
 
       - name: Full Deployment
         uses: ./.github/workflows/full-deployment.yml
