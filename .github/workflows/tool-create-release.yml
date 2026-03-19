@@ -9,6 +9,13 @@ on:
         description: "Tag to release (e.g. 1.0.0)"
         type: string
         required: true
+      environment:
+        default: dev
+        type: string
+        required: true
+    secrets:
+      IAM_ROLE:
+        required: true
 
 permissions:
   id-token: write
@@ -18,6 +25,7 @@ jobs:
   create_release:
     name: Create Release
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     env:
       tag: ${{ inputs.tag }}
     steps:
@@ -27,7 +35,7 @@ jobs:
             echo "Error: Tag must be in the format X.Y.Z (e.g. 1.0.0)"
             exit 1
           fi
-      
+
       - name: Configure AWS Credentials
         id: credentials
         uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
@@ -39,8 +47,11 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          repository: NHSDigital/orphaned-record-continuity
 
-      - name: Create Github tag
+      - name: Create GitHub tag
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github@github.com"
@@ -73,5 +84,3 @@ jobs:
             docker tag $repo:$IMAGE_SHA $repo:$tag
             docker push $repo:$tag
           done
-
-          
