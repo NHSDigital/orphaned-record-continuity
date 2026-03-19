@@ -45,7 +45,12 @@ jobs:
   full-deployment:
     needs: create_release
     name: Full Deployment
+    permissions: 
+      contents: write
+      id-token: write
+      pull-requests: write
     uses: ./.github/workflows/full-deployment.yml
+    
   re-tag-services:
     name: Re-tag Services with Release Tag
     needs: full-deployment
