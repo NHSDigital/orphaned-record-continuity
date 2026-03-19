@@ -1,6 +1,6 @@
-name: "TOOL: Rebuild, Deploy and Re-tag all Services"
+name: "TOOL: Create Release"
 
-run-name: ${{ github.ref_name }}
+run-name: ${{ inputs.tag }}
 
 on:
   workflow_dispatch:
@@ -8,7 +8,6 @@ on:
       tag:
         description: 'Release Tag (format: X.Y.Z, e.g. 1.0.0)'
         required: true
-        default: '1.0.0'
 
 permissions:
   id-token: write
@@ -20,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     env:
-      tag: ${{ github.ref_name }}
+      tag: ${{ inputs.tag }}
     steps:
       - name: Validate Tag Format
         run: |
@@ -43,6 +42,13 @@ jobs:
         with:
           fetch-depth: 0
           repository: NHSDigital/orphaned-record-continuity
+
+      - name: Create GitHub Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag $tag
+          git push origin $tag
 
       - name: Full Deployment
         uses: ./.github/workflows/full-deployment.yml
