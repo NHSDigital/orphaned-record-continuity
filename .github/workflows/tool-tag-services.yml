@@ -1,11 +1,14 @@
-name: "Z-AUTOMATED: Rebuild, Deploy and Re-tag all Services"
+name: "TOOL: Rebuild, Deploy and Re-tag all Services"
 
 run-name: ${{ github.ref_name }}
 
 on:
-  push:
-    tags:
-      - '*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release Tag (format: X.Y.Z, e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
 
 permissions:
   id-token: write
