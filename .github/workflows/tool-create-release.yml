@@ -28,15 +28,6 @@ jobs:
             exit 1
           fi
 
-      - name: Configure AWS Credentials
-        id: credentials
-        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
-        with:
-          role-to-assume: ${{ secrets.IAM_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
-          role-skip-session-tagging: true
-          mask-aws-account-id: true
-
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -51,10 +42,25 @@ jobs:
           cd .github/workflows
           echo "Debugging: List all files in the .github/workflows directory"
           ls -la
-
-      - name: Full Deployment
-        uses: ./.github/workflows/full-deployment.yml
-
+  full-deployment:
+      name: Full Deployment
+      uses: ./.github/workflows/full-deployment.yml
+  re-tag-services:
+    name: Re-tag Services with Release Tag
+    needs: full-deployment
+    runs-on: ubuntu-latest
+    environment: dev
+    env:        
+      tag: ${{ inputs.tag }}
+    steps:
+      - name: Configure AWS Credentials
+        id: credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
+        with:
+          role-to-assume: ${{ secrets.IAM_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-skip-session-tagging: true
+          mask-aws-account-id: true
       - name: Login to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
