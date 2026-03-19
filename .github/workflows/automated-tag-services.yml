@@ -1,21 +1,11 @@
-name: "TOOL: Create Release"
+name: "Z-AUTOMATED: Rebuild, Deploy and Re-tag all Services"
 
-run-name: ${{ inputs.tag }}
+run-name: ${{ github.ref_name }}
 
 on:
-  workflow_call:
-    inputs:
-      tag:
-        description: "Tag to release (e.g. 1.0.0)"
-        type: string
-        required: true
-      environment:
-        default: dev
-        type: string
-        required: true
-    secrets:
-      IAM_ROLE:
-        required: true
+  push:
+    tags:
+      - '*.*.*'
 
 permissions:
   id-token: write
@@ -23,11 +13,11 @@ permissions:
 
 jobs:
   create_release:
-    name: Create Release
+    name: Run Full Deployment and Re-tag Services
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment: dev
     env:
-      tag: ${{ inputs.tag }}
+      tag: ${{ github.ref_name }}
     steps:
       - name: Validate Tag Format
         run: |
@@ -50,13 +40,6 @@ jobs:
         with:
           fetch-depth: 0
           repository: NHSDigital/orphaned-record-continuity
-
-      - name: Create GitHub tag
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github@github.com"
-          git tag $tag
-          git push origin $tag
 
       - name: Full Deployment
         uses: ./.github/workflows/full-deployment.yml
