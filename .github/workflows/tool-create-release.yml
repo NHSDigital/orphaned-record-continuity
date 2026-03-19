@@ -43,8 +43,9 @@ jobs:
           echo "Debugging: List all files in the .github/workflows directory"
           ls -la
   full-deployment:
-      name: Full Deployment
-      uses: ./.github/workflows/full-deployment.yml
+    needs: create_release
+    name: Full Deployment
+    uses: ./.github/workflows/full-deployment.yml
   re-tag-services:
     name: Re-tag Services with Release Tag
     needs: full-deployment
