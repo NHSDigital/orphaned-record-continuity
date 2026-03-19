@@ -47,6 +47,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          repository: NHSDigital/orphaned-record-continuity
 
       - name: Create GitHub tag
         run: |
