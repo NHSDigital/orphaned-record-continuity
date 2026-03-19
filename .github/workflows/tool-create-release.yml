@@ -50,7 +50,8 @@ jobs:
       id-token: write
       pull-requests: write
     uses: ./.github/workflows/full-deployment.yml
-    
+    secrets: inherit
+
   re-tag-services:
     name: Re-tag Services with Release Tag
     needs: full-deployment
