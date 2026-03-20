@@ -38,11 +38,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag $tag
           git push origin $tag
-          echo "Debugging: List all files in the current directory"
-          ls -la
-          cd .github/workflows
-          echo "Debugging: List all files in the .github/workflows directory"
-          ls -la
 
   full-deployment:
     name: Full Deployment
@@ -95,7 +90,6 @@ jobs:
 
           for repo in "${repo_list[@]}"; do
             full_repo="${{ steps.credentials.outputs.aws-account-id }}.dkr.ecr.eu-west-2.amazonaws.com/${repo}"
-
             docker pull "${full_repo}:${IMAGE_SHA}"
             docker tag "${full_repo}:${IMAGE_SHA}" "${full_repo}:${tag}"
             docker push "${full_repo}:${tag}"
