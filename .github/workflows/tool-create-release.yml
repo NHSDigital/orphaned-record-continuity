@@ -6,18 +6,19 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release Tag (format: X.Y.Z, e.g. 1.0.0)'
+        description: "Release Tag (format: X.Y.Z, e.g. 1.0.0)"
         required: true
 
-permissions:
-  id-token: write
-  contents: write
+permissions: {}
 
 jobs:
   create_release:
     name: Run Full Deployment and Re-tag Services
     runs-on: ubuntu-latest
     environment: dev
+    permissions:
+      id-token: write
+      contents: write
     env:
       tag: ${{ inputs.tag }}
     steps:
@@ -42,10 +43,11 @@ jobs:
           cd .github/workflows
           echo "Debugging: List all files in the .github/workflows directory"
           ls -la
+
   full-deployment:
-    needs: create_release
     name: Full Deployment
-    permissions: 
+    needs: create_release
+    permissions:
       contents: write
       id-token: write
       pull-requests: write
@@ -57,7 +59,10 @@ jobs:
     needs: full-deployment
     runs-on: ubuntu-latest
     environment: dev
-    env:        
+    permissions:
+      id-token: write
+      contents: write
+    env:
       tag: ${{ inputs.tag }}
     steps:
       - name: Configure AWS Credentials
@@ -68,6 +73,7 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
           role-skip-session-tagging: true
           mask-aws-account-id: true
+
       - name: Login to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
