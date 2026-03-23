@@ -3,18 +3,10 @@ name: "TOOL: Create Release"
 run-name: ${{ inputs.tag }}
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g. 1.0.0)"
-        type: string
-        required: true
-      environment:
-        default: dev
-        type: string
-        required: true
-    secrets:
-      IAM_ROLE:
+        description: 'Release Tag (format: X.Y.Z, e.g. 1.0.0)'
         required: true
 
 permissions:
@@ -23,9 +15,9 @@ permissions:
 
 jobs:
   create_release:
-    name: Create Release
+    name: Run Full Deployment and Re-tag Services
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment: dev
     env:
       tag: ${{ inputs.tag }}
     steps:
@@ -51,10 +43,10 @@ jobs:
           fetch-depth: 0
           repository: NHSDigital/orphaned-record-continuity
 
-      - name: Create GitHub tag
+      - name: Create GitHub Tag
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag $tag
           git push origin $tag
 
