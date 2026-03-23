@@ -33,7 +33,7 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - SERVICES=sqs,sns,dynamodb,s3
       - GATEWAY_LISTEN=4566
+      - LOCALSTACK_ACKNOWLEDGE_ACCOUNT_REQUIREMENT=1
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
