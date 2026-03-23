@@ -58,6 +58,20 @@ jobs:
         if: ${{ inputs.requires_localstack }}
         run: docker compose -f docker-compose.localstack-local.yaml up -d
 
+      - name: Wait for Localstack and ActiveMQ
+        if: ${{ inputs.requires_localstack }}
+        run: |
+          set -euo pipefail
+
+          echo "Waiting for LocalStack health endpoint..."
+          timeout 120 bash -c 'until curl -fsS http://localhost:4566/_localstack/health | grep -q '"'"'"running"'"'"'; do sleep 2; done'
+
+          echo "Waiting for ActiveMQ brokers..."
+          timeout 120 bash -c 'until nc -z localhost 61616; do sleep 2; done'
+          timeout 120 bash -c 'until nc -z localhost 61617; do sleep 2; done'
+
+          echo "Dependency services are reachable."
+
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
