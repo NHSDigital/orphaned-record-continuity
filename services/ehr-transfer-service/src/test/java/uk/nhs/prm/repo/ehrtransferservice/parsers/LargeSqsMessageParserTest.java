@@ -1,9 +1,6 @@
 package uk.nhs.prm.repo.ehrtransferservice.parsers;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.google.common.base.Charsets;
-import com.google.common.io.ByteSource;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -24,7 +21,6 @@ class LargeSqsMessageParserTest {
     private final LargeSqsMessageParser parser = new LargeSqsMessageParser();
     private final TestDataLoader loader = new TestDataLoader();
 
-    @SuppressFBWarnings
     private InputStream readResourceFile(String resourceFileName) throws FileNotFoundException {
         return new FileInputStream("src/test/resources/data/" + resourceFileName);
     }
