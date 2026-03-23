@@ -48,14 +48,14 @@ function start_localstack {
   echo "################################"
   echo "##### Starting Localstack ######"
   echo "################################"
-  docker-compose -f docker-compose.localstack-local.yaml up -d
+  docker compose -f docker-compose.localstack-local.yaml up -d
 }
 
 function stop_localstack {
   echo "################################"
   echo "##### Stopping Localstack ######"
   echo "################################"
-  docker-compose -f docker-compose.localstack-local.yaml down
+  docker compose -f docker-compose.localstack-local.yaml down
 }
 
 ###########
