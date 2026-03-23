@@ -1,10 +1,9 @@
 plugins {
-    id 'org.springframework.boot' version '3.2.1'
-    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.springframework.boot' version '4.0.3'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'java'
     id 'jacoco'
-    id 'com.github.spotbugs' version '6.0.6'
-    id 'org.sonarqube' version '4.4.1.3373'
+    id 'org.sonarqube' version '7.2.2.6593'
 }
 
 sonar {
@@ -17,62 +16,15 @@ sonar {
 
 group = 'uk.nhs.prm.deductions'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '21'
-
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
-    }
-}
 
 repositories {
     mavenCentral()
 }
 
-//Without this task two jars are built, the additional "-plain.jar" is not needed
-// for more details refer to: https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#packaging-executable.and-plain-archives
-jar {
-    enabled = false
-}
-
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter'
-
-    implementation 'net.logstash.logback:logstash-logback-encoder:6.6'
-    implementation 'org.jetbrains:annotations:20.1.0'
-
-    implementation('io.netty:netty-buffer') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-codec') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-codec-http') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-codec-http2') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-common') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-handler') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-resolver') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-transport') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-transport-classes-epoll') { version { strictly '4.1.104.Final' } }
-    implementation('io.netty:netty-transport-native-unix-common') { version { strictly '4.1.104.Final' } }
-
-    implementation platform('software.amazon.awssdk:bom:2.18.41')
-    implementation 'software.amazon.awssdk:cloudwatch'
-    implementation 'software.amazon.awssdk:sns'
-    implementation 'software.amazon.awssdk:sqs'
-    implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:2.0.1'
-
-    implementation 'com.jcabi:jcabi-xml:0.23.1'
-    implementation 'com.google.code.gson:gson:2.10.1'
-
-    implementation 'com.github.spotbugs:spotbugs-annotations:4.8.3'
-
-    compileOnly 'org.projectlombok:lombok:1.18.30'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    testImplementation 'org.springframework.boot:spring-boot-test'
-    testImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.boot:spring-boot-starter-aop'
-
-    testImplementation "org.mockito:mockito-core:3.+"
-    testImplementation 'org.awaitility:awaitility:4.2.0'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
 }
 
 sourceSets {
@@ -83,8 +35,54 @@ sourceSets {
 }
 
 configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+
     integrationImplementation.extendsFrom testImplementation
     integrationRuntime.extendsFrom testRuntime
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
+
+    implementation('io.netty:netty-buffer') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-codec') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-codec-http') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-codec-http2') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-common') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-handler') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-resolver') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-transport') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-transport-classes-epoll') { version { strictly '4.2.9.Final' } }
+    implementation('io.netty:netty-transport-native-unix-common') { version { strictly '4.2.9.Final' } }
+
+    implementation platform('software.amazon.awssdk:bom:2.41.14')
+    implementation 'software.amazon.awssdk:cloudwatch'
+    implementation 'software.amazon.awssdk:sns'
+    implementation 'software.amazon.awssdk:sqs'
+
+    implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:2.1.4'
+
+    // TODO PRM-714 a discussion is needed about whether this is removed. It'll require complicated logic changes,
+    //  but is a dependency managed by a small team.
+    implementation 'com.jcabi:jcabi-xml:0.35.0'
+    implementation 'com.google.code.gson:gson:2.13.2'
+
+    compileOnly 'org.projectlombok:lombok:1.18.42'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-test'
+    testImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-json'
+
+    integrationImplementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    testImplementation 'org.mockito:mockito-core:5.22.0'
+    testImplementation 'org.awaitility:awaitility:4.3.0'
 }
 
 tasks.withType(Test) {
@@ -119,42 +117,3 @@ jacocoTestCoverageVerification {
         }))
     }
 }
-
-spotbugs {
-    toolVersion = '4.8.3'
-}
-
-spotbugsMain {
-    ignoreFailures = true
-    reports {
-        html {
-            enabled = true
-            destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
-        }
-    }
-}
-
-spotbugsTest {
-    ignoreFailures = true
-    reports {
-        html {
-            enabled = true
-            destination = file("$buildDir/reports/spotbugs/test/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
-        }
-    }
-}
-
-spotbugsIntegration {
-    ignoreFailures = true
-    reports {
-        html {
-            enabled = true
-            destination = file("$buildDir/reports/spotbugs/integration/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
-        }
-    }
-}
-
-check.dependsOn integration

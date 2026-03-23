@@ -4,7 +4,6 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import com.amazon.sqs.javamessaging.message.SQSTextMessage;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -13,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import uk.nhs.prm.deductions.nemseventprocessor.nemsevents.NemsEventListener;
 import uk.nhs.prm.deductions.nemseventprocessor.nemsevents.NemsEventService;
 
-import javax.jms.JMSException;
+import jakarta.jms.JMSException;
 import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +44,6 @@ class NemsEventListenerMessageTracingTest {
         nemsEventListener.onMessage(new SQSTextMessage("payload"));
     }
 
-    @NotNull
     private TestLogAppender addTestLogAppender() {
         var testLogAppender = new TestLogAppender();
         var logger = (Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
