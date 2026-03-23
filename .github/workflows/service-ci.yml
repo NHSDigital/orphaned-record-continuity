@@ -122,6 +122,7 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       requires_localstack: true
+      java_version: "25"
       ecr_alias: deductions/ehr-transfer-service
     secrets: inherit
 

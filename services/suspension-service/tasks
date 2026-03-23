@@ -15,6 +15,26 @@ echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
 # Shared utils            #
 ###########################
 
+function download_util() {
+  local UTIL_VERSION=$1
+  local UTIL_FILENAME=$2
+
+  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
+
+  mkdir -p "utils/$UTIL_VERSION"
+  if [[ ! -f $UTIL_FILEPATH ]];then
+    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
+  fi
+  chmod +x $UTIL_FILEPATH
+
+  echo "$UTIL_FILEPATH"
+}
+
+function fetch_redaction_utils() {
+  download_util $AWS_HELPERS_VERSION run-with-redaction.sh
+  download_util $AWS_HELPERS_VERSION redactor
+}
+
 AWS_HELPERS_FILE="utils/$AWS_HELPERS_VERSION/aws-helpers"
 
 mkdir -p "utils/$AWS_HELPERS_VERSION"
@@ -147,6 +167,9 @@ function destroy_localstack {
 
 command="$1"
 case "${command}" in
+  fetch_utils)
+      fetch_redaction_utils
+      ;;
   destroy_localstack)
       destroy_localstack
       ;;
