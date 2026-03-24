@@ -31,14 +31,8 @@ function download_util() {
   echo "$UTIL_FILEPATH"
 }
 
-function fetch_redaction_utils() {
-  download_util $AWS_HELPERS_VERSION run-with-redaction.sh
-  download_util $AWS_HELPERS_VERSION redactor
-}
-
 AWS_HELPERS_FILE=$(download_util $AWS_HELPERS_VERSION aws-helpers)
 source $AWS_HELPERS_FILE
-
 
 ####################################
 # Instance (Environment) Variables #
@@ -101,9 +95,6 @@ function destroy_localstack {
 
 command="$1"
 case "${command}" in
-  fetch_utils)
-      fetch_redaction_utils
-      ;;
   destroy_localstack)
       destroy_localstack
       ;;

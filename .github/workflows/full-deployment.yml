@@ -101,6 +101,7 @@ jobs:
       service: pds-adaptor
       environment: ${{ inputs.environment }}
       is_deployment: ${{ inputs.is_deployment }}
+      # TODO PRM-713 REMOVE THIS LINE SO IT TAKES THE DEFAULT
       java_version: "11"
       ecr_alias: deductions/pds-adaptor
     secrets: inherit

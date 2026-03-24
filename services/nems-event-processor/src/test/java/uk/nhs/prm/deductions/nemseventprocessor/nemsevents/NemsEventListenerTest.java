@@ -1,7 +1,6 @@
 package uk.nhs.prm.deductions.nemseventprocessor.nemsevents;
 
 import com.amazon.sqs.javamessaging.message.SQSTextMessage;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -9,7 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.deductions.nemseventprocessor.config.Tracer;
 
-import javax.jms.JMSException;
+import jakarta.jms.JMSException;
 
 import static org.mockito.Mockito.*;
 
@@ -45,7 +44,6 @@ class NemsEventListenerTest {
     }
 
     @Test
-    @SuppressFBWarnings
     void shouldNotAcknowledgeOrProcessMessageIfJMSReceivingFails() throws JMSException {
         SQSTextMessage message = spy(new SQSTextMessage("payload"));
 
@@ -58,7 +56,6 @@ class NemsEventListenerTest {
     }
 
     @Test
-    @SuppressFBWarnings
     void shouldNotAcknowledgeTheMessageIfProcessingFailsForAnyUncheckedException() throws JMSException {
         String payload = "payload";
         SQSTextMessage message = spy(new SQSTextMessage(payload));

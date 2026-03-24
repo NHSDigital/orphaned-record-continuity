@@ -8,6 +8,13 @@ import uk.nhs.prm.deductions.nemseventprocessor.metrics.healthprobes.HealthProbe
 
 import java.util.List;
 
+/**
+ * TODO - THIS SHOULD BE REMOVED
+ *  This class is only used to publish health check metrics for the service's connection to CloudWatch.
+ *  We think this is redundant, however, when we've tried to remove health checks from other services, pipelines have
+ *  failed. The health checks are quite deeply rooted in the codebase. For now, we're leaving this in place.
+ */
+
 @Component
 @Slf4j
 public class HealthMetricPublisher {
