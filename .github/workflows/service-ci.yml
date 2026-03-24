@@ -109,6 +109,8 @@ jobs:
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       requires_localstack: true
+      # PRM-711: Remove the hardcoded java_versions once all services are compatible with Java 25
+      java_version: "25"
       ecr_alias: deductions/nems-event-processor
     secrets: inherit
 

@@ -7,6 +7,13 @@ import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.GetTopicAttributesRequest;
 import uk.nhs.prm.deductions.nemseventprocessor.metrics.AppConfig;
 
+/**
+ * TODO - THIS SHOULD BE REMOVED
+ *  This class is only used to publish health check metrics for the service's connection to SNS.
+ *  We think this is redundant, however, when we've tried to remove health checks from other services, pipelines have
+ *  failed. The health checks are quite deeply rooted in the codebase. For now, we're leaving this in place.
+ */
+
 @Slf4j
 @Component
 public class UnhandledSnsHealthProbe implements HealthProbe {
