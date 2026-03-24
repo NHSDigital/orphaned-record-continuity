@@ -9,8 +9,6 @@ set -Eeo pipefail
 AWS_DEFAULT_REGION=eu-west-2
 IMAGE_REPO_NAME=deductions/pds-adaptor
 export NHS_SERVICE=pds-adaptor
-AWS_HELPERS_VERSION=0.2.27
-echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
 
 function configure_local_envs {
   export LOG_LEVEL=debug
