@@ -19,8 +19,7 @@ on:
         default: false
       java_version:
         type: string
-#        TODO PRM-711: Update to Java 25 once all services are compatible
-        default: "21"
+        default: "25"
         required: false
       image_prefix:
         type: string
