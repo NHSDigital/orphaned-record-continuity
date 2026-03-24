@@ -51,9 +51,8 @@ describe('Database connection test', () => {
     // when
     await Promise.all(databaseOperationPromises);
 
-    const recordsAfterTransaction = await db.queryTableByInboundConversationId(
-      INBOUND_CONVERSATION_ID
-    );
+    const recordsAfterTransaction =
+      await db.queryTableByInboundConversationId(INBOUND_CONVERSATION_ID);
     const fragments = recordsAfterTransaction.filter(isFragment);
     // then
     fragments.forEach(fragment => {
