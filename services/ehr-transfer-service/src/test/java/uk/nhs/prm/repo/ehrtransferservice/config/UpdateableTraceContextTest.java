@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import uk.nhs.prm.repo.ehrtransferservice.logging.UpdateableTraceContext;
 
-import javax.jms.JMSException;
+import jakarta.jms.JMSException;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;

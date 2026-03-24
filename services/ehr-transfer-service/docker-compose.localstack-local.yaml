@@ -25,7 +25,7 @@ services:
 
   localstack:
     container_name: "localstack-ehr-transfer-service"
-    image: localstack/localstack
+    image: localstack/localstack:4.14.0
     ports:
       - "4566:4566"
     network_mode: bridge
@@ -36,4 +36,3 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"

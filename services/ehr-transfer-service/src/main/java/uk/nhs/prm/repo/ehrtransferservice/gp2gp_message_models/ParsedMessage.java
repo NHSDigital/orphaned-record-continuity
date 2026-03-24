@@ -1,10 +1,5 @@
 package uk.nhs.prm.repo.ehrtransferservice.gp2gp_message_models;
 
-import org.apache.activemq.command.ActiveMQBytesMessage;
-
-import javax.jms.BytesMessage;
-import javax.jms.JMSException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;

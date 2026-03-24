@@ -4,8 +4,7 @@ import com.amazon.sqs.javamessaging.ProviderConfiguration;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazon.sqs.javamessaging.SQSSession;
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,8 +25,8 @@ import uk.nhs.prm.repo.ehrtransferservice.repo_incoming.RepoIncomingEventListene
 import uk.nhs.prm.repo.ehrtransferservice.repo_incoming.RepoIncomingEventParser;
 import uk.nhs.prm.repo.ehrtransferservice.repo_incoming.RepoIncomingService;
 
-import javax.jms.JMSException;
-import javax.jms.Session;
+import jakarta.jms.JMSException;
+import jakarta.jms.Session;
 
 @Configuration
 @RequiredArgsConstructor
@@ -59,13 +58,13 @@ public class SqsListenerSpringConfiguration {
     private String negativeAckQueueName;
 
     @Bean
-    public AmazonSQSAsync amazonSQSAsync() {
-        return AmazonSQSAsyncClientBuilder.defaultClient();
+    public SqsClient sqsClient() {
+        return SqsClient.create();
     }
 
     @Bean
-    public SQSConnection createConnection(AmazonSQSAsync amazonSQSAsync) throws JMSException {
-        var connectionFactory = new SQSConnectionFactory(new ProviderConfiguration(), amazonSQSAsync);
+    public SQSConnection createConnection(SqsClient sqsClient) throws JMSException {
+        SQSConnectionFactory connectionFactory = new SQSConnectionFactory(new ProviderConfiguration(), sqsClient);
         return connectionFactory.createConnection();
     }
 

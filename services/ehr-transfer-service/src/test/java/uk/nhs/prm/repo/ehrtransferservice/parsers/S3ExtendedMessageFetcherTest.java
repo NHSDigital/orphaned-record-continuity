@@ -5,7 +5,6 @@ import com.google.common.base.Charsets;
 import com.google.common.io.ByteSource;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,7 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -106,7 +105,6 @@ class S3ExtendedMessageFetcherTest {
         });
     }
 
-    @SuppressFBWarnings
     private InputStream readResourceFile(String resourceFileName) throws FileNotFoundException {
         return new FileInputStream("src/test/resources/data/" + resourceFileName);
     }

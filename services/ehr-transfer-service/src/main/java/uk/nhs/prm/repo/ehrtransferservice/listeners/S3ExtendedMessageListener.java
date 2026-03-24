@@ -1,5 +1,6 @@
 package uk.nhs.prm.repo.ehrtransferservice.listeners;
 
+import jakarta.jms.JMSException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import uk.nhs.prm.repo.ehrtransferservice.logging.Tracer;
@@ -8,9 +9,8 @@ import uk.nhs.prm.repo.ehrtransferservice.gp2gp_message_models.ParsedMessage;
 import uk.nhs.prm.repo.ehrtransferservice.handlers.MessageHandler;
 import uk.nhs.prm.repo.ehrtransferservice.parsers.S3ExtendedMessageFetcher;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
+import jakarta.jms.Message;
+import jakarta.jms.MessageListener;
 
 @Slf4j
 @RequiredArgsConstructor

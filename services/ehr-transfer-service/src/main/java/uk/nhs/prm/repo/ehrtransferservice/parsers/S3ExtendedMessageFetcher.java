@@ -10,8 +10,8 @@ import uk.nhs.prm.repo.ehrtransferservice.models.LargeSqsMessage;
 import uk.nhs.prm.repo.ehrtransferservice.models.S3PointerMessage;
 import uk.nhs.prm.repo.ehrtransferservice.models.enums.Status;
 
-import javax.jms.Message;
-import javax.jms.TextMessage;
+import jakarta.jms.Message;
+import jakarta.jms.TextMessage;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;

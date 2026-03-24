@@ -29,19 +29,18 @@ function configure_local_envs {
 # Localstack #
 ##############
 
-function teardown_localstack {
-  echo docker processes running: $(docker ps)
+function start_localstack {
+  echo "################################"
+  echo "##### Starting Localstack ######"
+  echo "################################"
+  docker compose -f docker-compose.localstack-local.yaml up -d
+}
 
-  DOCKER_CONTAINERS_ON_PORT=$(docker ps --filter publish=4566 -q)
-
-  echo docker processes running on expected localstack port: $DOCKER_CONTAINERS_ON_PORT
-
-  if [ -z "$DOCKER_CONTAINERS_ON_PORT" ]; then
-    echo no localstack running
-  else
-    echo trying to kill localstack...
-    docker stop $DOCKER_CONTAINERS_ON_PORT
-  fi
+function stop_localstack {
+  echo "################################"
+  echo "##### Stopping Localstack ######"
+  echo "################################"
+  docker compose -f docker-compose.localstack-local.yaml down
 }
 
 ###########
@@ -50,9 +49,6 @@ function teardown_localstack {
 
 command="$1"
 case "${command}" in
-  teardown_localstack)
-      teardown_localstack
-      ;;
   build)
       rm -rf build/
       ./gradlew build -x integration
@@ -62,24 +58,29 @@ case "${command}" in
       ;;
   test_integration)
       configure_local_envs
+      start_localstack
       ./gradlew --info integration
-      ;;
-  test_coverage)
-      gradle jacocoTestCoverageVerification
+      stop_localstack
       ;;
   code_quality)
+      configure_local_envs
+      start_localstack
       gradle check -x test -x integration
+      stop_localstack
       ;;
   test_all)
       configure_local_envs
+      start_localstack
       ./gradlew clean test integration jacocoTestCoverageVerification check
+      stop_localstack
       ;;
-  run_local)
+  run_sonar)
+      _assume_environment_role $NHS_ENVIRONMENT
       configure_local_envs
-      ./gradlew bootRun
-      ;;
-  start_localstack)
-      docker-compose -f docker-compose.localstack-local.yaml up -d
+      configure_sonar_environment_variable
+      start_localstack
+      ./gradlew build sonar --info
+      stop_localstack
       ;;
   *)
       echo "Invalid command: '${command}'"

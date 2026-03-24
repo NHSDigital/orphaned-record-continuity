@@ -1,15 +1,15 @@
 ### prm-repo-ehr-transfer-service
 
-This component of the Repository is reponsible for the request and receiving (incoming transfer) of a patient's
-Electronic Health Record over GP2GP.
+This component of Orphaned Record Continuity (ORC) is responsible for the requesting and receiving (incoming transfer) 
+of a patient's Electronic Health Record over GP2GP.
 
-It is the first receiver of all inbound messages (from MHS inbound) for the Repository and will send on 
+It is the first receiver of all inbound messages (from MHS inbound) for the ORC and will send on 
 irrelevant messages to a downstream "not handled" queue so that they can be actioned by the service responsible.
 
 ## Prerequisites
 
-- Java 21 LTS
-- Gradle 8.5
+- Java 25 LTS
+- Gradle 9.3
 
 ### AWS helpers
 
@@ -31,48 +31,35 @@ You can access the queues using the Active MQ console on: `http://localhost:8161
 
 ### Running the tests
 
-Run the unit tests with:
-`./tasks test_unit`
+#### All tests
+To run all Unit and Integration tests and produce a coverage report, in your terminal, run `./tasks test_all`
 
-In your terminal with
-`./gradlew test`
+#### Unit testing
+These are easiest to run from your IDE, however, you can also run them from your terminal with: `./tasks test_unit`
 
-Run the integration tests with:
+#### Integration testing
+The integration tests can be run from your terminal with: `./tasks test_integration` which will start and stop LocalStack for you.
 
-`./tasks test_integration`
-
-Alternatively, you can use `play` button next to each test in IntelliJ (your IDE)
-
-Run the coverage tests with:
-
-`./tasks test_coverage`
-
-Run the dependency check tests with:
-
-`./tasks dep`
-
-To run all the checks before committing with:
-
-`./tasks test_all`
+If you want to run these from your IDE, you must first start LocalStack with: `./tasks start_localstack`
+It is recommended that you stop LocalStack after running the tests with: `./tasks stop_localstack`
 
 ### Config
 
 If you need to add any new configuration items, update the `src/main/resources/application.properties` file per
-environment as well as add the environment variables in `./tasks` `configure_local_envariables`. Note that `test`
-directory has its own `application.properties` file used in the test suite.
+environment as well as add the environment variables in `./tasks` `configure_local_envariables`.
 
-Ensure you have VPN connection set up to both `dev` and `test` environments:
+Ensure you have VPN connection set up to `dev` environment:
 [CLICK HERE](https://gpitbjss.atlassian.net/wiki/spaces/TW/pages/1832779966/VPN+for+Deductions+Services)
 
 ### Setup
 
-In AmazonMQ settings for either the `dev` or `test` provision. Edit the `deductor-amq-broker-${NHS_ENVIRONMENT}`
+In AmazonMQ settings for the `dev` provision. Edit the `deductor-amq-broker-${NHS_ENVIRONMENT}`
 security group inbound rules. Add new rule that allows All TCP from the `${NHS_ENVIRONMENT} VPN VM security group`,
 apply before running the following:
 
 ```
 // Starts the server locally using `.env`
-$ NHS_ENVIRONMENT=test 
+$ NHS_ENVIRONMENT=dev 
 ```
 
 ## Access to AWS

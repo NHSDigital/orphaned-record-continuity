@@ -1,7 +1,5 @@
 package uk.nhs.prm.repo.ehrtransferservice.config;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -19,14 +17,7 @@ public class SnsClientSpringConfiguration {
     private AwsCredentialsProvider awsCredentialsProvider;
 
     @Bean
-    public AmazonSNS snsClient() {
-        return AmazonSNSClientBuilder.standard()
-                .withRegion(awsRegion)
-                .build();
-    }
-
-    @Bean
-    public SnsClient snsClientV2() {
+    public SnsClient snsClient() {
         return SnsClient.builder()
                 .region(Region.of(awsRegion))
                 .credentialsProvider(awsCredentialsProvider)

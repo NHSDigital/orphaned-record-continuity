@@ -1,12 +1,13 @@
 package uk.nhs.prm.repo.ehrtransferservice.message_publishers;
 
-import com.amazonaws.services.sns.model.MessageAttributeValue;
-import com.amazonaws.services.sns.model.PublishRequest;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import software.amazon.sns.AmazonSNSExtendedClient;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.model.PublishResponse;
 import uk.nhs.prm.repo.ehrtransferservice.logging.Tracer;
 
 import java.util.HashMap;
@@ -16,7 +17,7 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class MessagePublisher {
-    private final AmazonSNSExtendedClient snsClient;
+    private final SnsClient snsClient;
     private final Tracer tracer;
 
     public void sendMessage(String topicArn, String message) {
@@ -30,14 +31,15 @@ public class MessagePublisher {
             attributes.forEach((key, value) -> messageAttributes.put(key, getMessageAttributeValue(value)));
         }
 
-        PublishRequest request = new PublishRequest()
-                .withMessage(message)
-                .withMessageAttributes(messageAttributes)
-                .withTopicArn(topicArn);
+        PublishRequest request = PublishRequest.builder()
+                .message(message)
+                .messageAttributes(messageAttributes)
+                .topicArn(topicArn)
+                .build();
 
-        var result = snsClient.publish(request);
-        var topicAttributes = topicArn.split(":");
-        log.info("PUBLISHED: message to {} topic. Published SNS message id: {}", topicAttributes[topicAttributes.length - 1], result.getMessageId());
+        PublishResponse response = snsClient.publish(request);
+        String[] topicAttributes = topicArn.split(":");
+        log.info("PUBLISHED: message to {} topic. Published SNS message id: {}", topicAttributes[topicAttributes.length - 1], response.messageId());
     }
 
     public void sendJsonMessage(String topicArn, Object message, Map<String, String> attributes) {
@@ -46,6 +48,9 @@ public class MessagePublisher {
     }
 
     private MessageAttributeValue getMessageAttributeValue(String attributeValue) {
-        return new MessageAttributeValue().withDataType("String").withStringValue(attributeValue);
+        return MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(attributeValue)
+                .build();
     }
 }

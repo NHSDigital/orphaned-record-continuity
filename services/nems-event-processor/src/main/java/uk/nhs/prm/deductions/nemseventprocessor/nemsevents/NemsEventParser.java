@@ -4,7 +4,6 @@ import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -27,7 +26,6 @@ public class NemsEventParser {
         return extractNemsMessageId(messageXml);
     }
 
-    @NotNull
     private NemsEventMessage tryToParse(String messageBody) {
         final XML messageXml = parseMessageXML(messageBody);
 
@@ -64,14 +62,12 @@ public class NemsEventParser {
         return findOrganizationByUrl(messageXml, newGpReferenceUrl);
     }
 
-    @NotNull
     private NemsEventMessage createSuspensionMessage(final XML messageXml, XML organizationXml, String nemsMessageId) {
         return NemsEventMessage.suspension(extractNhsNumber(messageXml),
                 extractWhenLastUpdated(messageXml),
                 extractOdsCode(organizationXml),nemsMessageId);
     }
 
-    @NotNull
     private NemsEventMessage createReRegistrationMessage(final XML messageXml, XML organizationXml, String nemsMessageId) {
         return NemsEventMessage.reRegistration(extractNhsNumber(messageXml),
                 extractWhenLastUpdated(messageXml),
@@ -160,7 +156,6 @@ public class NemsEventParser {
         }
     }
 
-    @NotNull
     private XML parseMessageXML(String messageBody) {
         try {
             return new XMLDocument(messageBody).registerNs("fhir", "http://hl7.org/fhir");
@@ -177,3 +172,5 @@ public class NemsEventParser {
         return xpath.get(0);
     }
 }
+
+

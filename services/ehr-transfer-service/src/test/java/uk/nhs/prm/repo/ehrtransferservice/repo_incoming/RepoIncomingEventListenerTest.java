@@ -20,7 +20,7 @@ import uk.nhs.prm.repo.ehrtransferservice.exceptions.database.QueryReturnedNoIte
 import uk.nhs.prm.repo.ehrtransferservice.exceptions.timeout.TimeoutExceededException;
 import uk.nhs.prm.repo.ehrtransferservice.logging.Tracer;
 
-import javax.jms.Message;
+import jakarta.jms.Message;
 
 import java.util.UUID;
 import java.util.stream.Stream;
