@@ -57,6 +57,8 @@ jobs:
 
       - name: Start LocalStack
         uses: LocalStack/setup-localstack@v0.3.0
+        env:
+          LOCALSTACK_ACKNOWLEDGE_ACCOUNT_REQUIREMENT: "1" # https://github.com/localstack/setup-localstack/issues/65
         with:
           install-awslocal: "true"
           use-pro: false
