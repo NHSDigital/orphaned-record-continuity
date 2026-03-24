@@ -6,7 +6,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
@@ -31,6 +30,11 @@ import java.util.Map;
 
 @TestConfiguration
 public class LocalStackAwsConfig {
+
+    private static final Region LOCALSTACK_REGION = Region.EU_WEST_2;
+
+    private static final StaticCredentialsProvider LOCALSTACK_CREDENTIALS =
+            StaticCredentialsProvider.create(AwsBasicCredentials.create("LSIA5678901234567890", "LSIA5678901234567890"));
 
     @Autowired
     private SqsClient sqsClient;
@@ -75,9 +79,8 @@ public class LocalStackAwsConfig {
     public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) {
         return SqsClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.EU_WEST_2)
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create("LSIA5678901234567890", "LSIA5678901234567890")))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
                 .build();
     }
 
@@ -85,18 +88,8 @@ public class LocalStackAwsConfig {
     public static SnsClient snsClient(@Value("${localstack.url}") String localstackUrl) {
         return SnsClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.EU_WEST_2)
-                .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
-                    @Override
-                    public String accessKeyId() {
-                        return "LSIA5678901234567890";
-                    }
-
-                    @Override
-                    public String secretAccessKey() {
-                        return "LSIA5678901234567890";
-                    }
-                }))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
                 .build();
     }
 
@@ -104,19 +97,8 @@ public class LocalStackAwsConfig {
     public static DynamoDbClient dynamoDbClient(@Value("${localstack.url}") String localstackUrl) {
         return DynamoDbClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.EU_WEST_2)
-                .credentialsProvider(
-                        StaticCredentialsProvider.create(new AwsCredentials() {
-                            @Override
-                            public String accessKeyId() {
-                                return "LSIA5678901234567890";
-                            }
-
-                            @Override
-                            public String secretAccessKey() {
-                                return "LSIA5678901234567890";
-                            }
-                        }))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
                 .build();
     }
 
@@ -125,9 +107,8 @@ public class LocalStackAwsConfig {
     public static CloudWatchClient cloudwatchClient(@Value("${localstack.url}") String localstackUrl) {
         return CloudWatchClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.EU_WEST_2)
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
                 .build();
     }
 

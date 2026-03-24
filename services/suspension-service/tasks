@@ -8,21 +8,6 @@ set -Eeo pipefail
 
 AWS_DEFAULT_REGION=eu-west-2
 IMAGE_REPO_NAME=repo/suspension-service
-AWS_HELPERS_VERSION=0.2.27
-echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
-
-###########################
-# Shared utils            #
-###########################
-
-AWS_HELPERS_FILE="utils/$AWS_HELPERS_VERSION/aws-helpers"
-
-mkdir -p "utils/$AWS_HELPERS_VERSION"
-if [[ ! -f $AWS_HELPERS_FILE ]];then
-  wget --quiet -O $AWS_HELPERS_FILE https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${AWS_HELPERS_VERSION}/aws-helpers
-fi
-chmod +x $AWS_HELPERS_FILE
-source $AWS_HELPERS_FILE
 
 ####################################
 # Instance (Environment) Variables #
@@ -60,23 +45,22 @@ function configure_local_envs {
   export NHS_ENVIRONMENT="local"
 }
 
+#############
+# Functions #
+#############
+
 function start_localstack {
-  docker compose -f docker-compose.localstack-local.yaml up -d
+  echo "################################"
+  echo "##### Starting Localstack ######"
+  echo "################################"
+  docker-compose -f docker-compose.localstack-local.yaml up -d
 }
 
 function stop_localstack {
-  echo docker processes running: $(docker ps)
-
-  DOCKER_CONTAINERS_ON_PORT=$(docker ps --filter publish=4566 -q)
-
-  echo docker processes running on expected localstack port: $DOCKER_CONTAINERS_ON_PORT
-
-  if [ -z "$DOCKER_CONTAINERS_ON_PORT" ]; then
-    echo no localstack nonsense going on, cool
-  else
-    echo trying to kill localstack...
-    docker stop $DOCKER_CONTAINERS_ON_PORT
-  fi
+  echo "################################"
+  echo "##### Stopping Localstack ######"
+  echo "################################"
+  docker-compose -f docker-compose.localstack-local.yaml down
 }
 
 ###########

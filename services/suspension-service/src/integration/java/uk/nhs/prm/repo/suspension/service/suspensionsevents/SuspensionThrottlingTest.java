@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -40,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
-@Import(LocalStackAwsConfig.class)
+@ContextConfiguration(classes = LocalStackAwsConfig.class)
 @DirtiesContext
 public class SuspensionThrottlingTest {
 
@@ -53,29 +52,16 @@ public class SuspensionThrottlingTest {
     @Value("${aws.mofUpdatedQueueName}")
     private String mofUpdatedQueueName;
 
-    private static WireMockServer stubPdsAdaptor;
+    private WireMockServer stubPdsAdaptor;
 
     private String mofUpdatedQueueUrl;
+
     private String suspensionQueueUrl;
-
-    @BeforeAll
-    static void setUpWireMock() {
-        stubPdsAdaptor = initializeWebServer();
-        configureFor("localhost", stubPdsAdaptor.port());
-        System.setProperty("pds.adaptor.baseUrl", stubPdsAdaptor.baseUrl());
-    }
-
-    @AfterAll
-    static void tearDownWireMock() {
-        if (stubPdsAdaptor != null) {
-            stubPdsAdaptor.stop();
-        }
-        System.clearProperty("pds.adaptor.baseUrl");
-    }
 
     @BeforeEach
     public void setUp() {
-        stubPdsAdaptor.resetAll();
+        stubPdsAdaptor = initializeWebServer();
+        configureFor("localhost", stubPdsAdaptor.port());
         mofUpdatedQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(mofUpdatedQueueName)).queueUrl();
         suspensionQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
         purgeQueues(suspensionQueueUrl, mofUpdatedQueueUrl);
@@ -83,11 +69,13 @@ public class SuspensionThrottlingTest {
 
     @AfterEach
     public void tearDown() {
+        stubPdsAdaptor.resetAll();
+        stubPdsAdaptor.stop();
         purgeQueues(suspensionQueueUrl, mofUpdatedQueueUrl);
     }
 
-    private static WireMockServer initializeWebServer() {
-        final WireMockServer wireMockServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+    private WireMockServer initializeWebServer() {
+        final WireMockServer wireMockServer = new WireMockServer(8080);
         wireMockServer.start();
         return wireMockServer;
     }

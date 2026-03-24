@@ -13,8 +13,6 @@ import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.config.SimpleJmsListenerEndpoint;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import uk.nhs.prm.repo.suspension.service.suspensionsevents.SuspensionMessageProcessor;
 import uk.nhs.prm.repo.suspension.service.suspensionsevents.SuspensionsEventListener;
@@ -39,19 +37,8 @@ public class SqsListenerSpringConfiguration {
     @Value("${suspension.thread.max.pool.size}")
     private Integer threadMaxPoolSize;
 
-    @Value("${AWS_REGION:eu-west-2}")
-    private String awsRegion;
-
     private final SuspensionMessageProcessor suspensionsEventProcessor;
     private final Tracer tracer;
-
-    @Bean
-    public SqsClient sqsClient() {
-        return SqsClient.builder()
-                .region(Region.of(awsRegion))
-                .credentialsProvider(DefaultCredentialsProvider.create())
-                .build();
-    }
 
     @Bean
     public DefaultMessageListenerContainer jmsListener(DefaultJmsListenerContainerFactory jmsListenerContainerFactory) {

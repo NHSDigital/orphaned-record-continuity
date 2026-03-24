@@ -74,7 +74,6 @@ public class SuspensionsIntegrationTest {
     public void tearDown() {
         stubPdsAdaptor.resetAll();
         stubPdsAdaptor.stop();
-        suspensionQueueUrl = sqs.getQueueUrl(builder -> builder.queueName(suspensionsQueueName)).queueUrl();
         purgeQueue(suspensionQueueUrl);
     }
 
