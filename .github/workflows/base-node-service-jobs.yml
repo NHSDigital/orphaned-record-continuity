@@ -59,6 +59,7 @@ jobs:
         uses: LocalStack/setup-localstack@v0.3.0
         with:
           install-awslocal: "true"
+          use-pro: false
           image-tag: "4.14.0"
 
       # https://docs.aws.amazon.com/cli/latest/reference/dynamodb/create-table.html
