@@ -115,6 +115,7 @@ jobs:
       is_deployment: ${{ inputs.is_deployment }}
       requires_localstack: true
       image_prefix: repo/
+      java_version: "25"
       ecr_alias: repo/re-registration-service
     secrets: inherit
 

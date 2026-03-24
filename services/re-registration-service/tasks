@@ -9,30 +9,6 @@ set -Eeo pipefail
 AWS_DEFAULT_REGION=eu-west-2
 export NHS_SERVICE=re-registration-service
 IMAGE_REPO_NAME=repo/$NHS_SERVICE
-AWS_HELPERS_VERSION=0.2.27
-echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
-
-###########################
-# Shared utils            #
-###########################
-
-function download_util() {
-  local UTIL_VERSION=$1
-  local UTIL_FILENAME=$2
-
-  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
-
-  mkdir -p "utils/$UTIL_VERSION"
-  if [[ ! -f $UTIL_FILEPATH ]];then
-    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
-  fi
-  chmod +x $UTIL_FILEPATH
-
-  echo "$UTIL_FILEPATH"
-}
-
-AWS_HELPERS_FILE=$(download_util $AWS_HELPERS_VERSION aws-helpers)
-source $AWS_HELPERS_FILE
 
 ####################################
 # Instance (Environment) Variables #
@@ -42,14 +18,6 @@ function check_env {
   if [[ -z "${NHS_ENVIRONMENT}" ]]; then
     echo "Must set NHS_ENVIRONMENT"
     exit 1
-  fi
-}
-
-function set_image_tag() {
-  if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
-    export IMAGE_TAG=${GO_PIPELINE_LABEL:-$(git rev-parse HEAD | cut -c 1-8)}
-  else
-    export IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
   fi
 }
 
@@ -73,21 +41,22 @@ function configure_sonar_environment_variable {
   export SONAR_TOKEN=$(_get_aws_ssm_secret "/repo/dev/output/re-registration-service/sonar_token")
 }
 
-function destroy_localstack {
-  echo docker processes running: $(docker ps)
-
-  DOCKER_CONTAINERS_ON_PORT=$(docker ps --filter publish=4566 -q)
-
-  echo docker processes running on expected localstack port: $DOCKER_CONTAINERS_ON_PORT
-
-  if [ -z "$DOCKER_CONTAINERS_ON_PORT" ]; then
-    echo no localstack nonsense going on, cool
-  else
-    echo trying to kill localstack...
-    docker stop $DOCKER_CONTAINERS_ON_PORT
-  fi
+#############
+# FUNCTIONS #
+#############
+function start_localstack {
+  echo "################################"
+  echo "##### Starting Localstack ######"
+  echo "################################"
+  docker compose -f docker-compose.localstack-local.yaml up -d
 }
 
+function stop_localstack {
+  echo "################################"
+  echo "##### Stopping Localstack ######"
+  echo "################################"
+  docker compose -f docker-compose.localstack-local.yaml down
+}
 
 ###########
 ## TASKS ##
@@ -95,17 +64,12 @@ function destroy_localstack {
 
 command="$1"
 case "${command}" in
-  destroy_localstack)
-      destroy_localstack
+  start_localstack)
+      configure_local_envs
+      start_localstack
       ;;
-  build_docker)
-      configure_envs
-      ./tasks build
-      configure_docker_repository_uri
-      fetch_redaction_utils
-      build_docker_image
-      echo "Pushing the Docker image... $REPOSITORY_URI:$IMAGE_TAG"
-      docker push $REPOSITORY_URI:$IMAGE_TAG
+  stop_localstack)
+      stop_localstack
       ;;
   build)
       rm -rf build/
@@ -118,67 +82,36 @@ case "${command}" in
       configure_local_envs
       start_localstack
       ./gradlew --info integration
+      stop_localstack
       ;;
   test_coverage)
       configure_local_envs
       start_localstack
       ./gradlew jacocoTestCoverageVerification
+      stop_localstack
       ;;
   code_quality)
-      destroy_localstack
+      start_localstack
       ./gradlew check -x test -x integration
+      stop_localstack
       ;;
   test_all)
       configure_local_envs
       start_localstack
       ./gradlew test integration jacocoTestCoverageVerification check
+      stop_localstack
       ;;
   run_sonar)
       configure_local_envs
       _assume_environment_role $NHS_ENVIRONMENT
       configure_sonar_environment_variable
-      destroy_localstack
+      start_localstack
       ./gradlew build sonar --info
+      stop_localstack
       ;;
   run_local)
       configure_local_envs
       ./gradlew bootRun
-      ;;
-  start_localstack)
-      docker-compose -f docker-compose.localstack-local.yaml up -d
-      ;;
-  tf)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_init
-      bash
-      ;;
-  tf_plan)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_plan $2
-      ;;
-  tf_apply)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_apply
-      ;;
-  promote_docker_image)
-      check_env
-      set_image_tag
-      promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
-      ;;
-  wait_ecs)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      aws ecs wait services-stable \
-        --region $AWS_DEFAULT_REGION \
-        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
-        --service $NHS_ENVIRONMENT-${NHS_SERVICE}
-      ;;
-  *)
-      echo "Invalid command: '${command}'"
-      exit 1
       ;;
 esac
 set +e

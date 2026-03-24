@@ -1,10 +1,9 @@
-version: "2.2"
 services:
   default:
     links:
       - localstack:localstack
   localstack:
-    image: localstack/localstack
+    image: localstack/localstack:4.14.0
     ports:
       - "4566:4566"
     environment:
