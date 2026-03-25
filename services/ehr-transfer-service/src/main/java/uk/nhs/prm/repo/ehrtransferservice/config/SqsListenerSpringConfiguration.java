@@ -58,11 +58,6 @@ public class SqsListenerSpringConfiguration {
     private String negativeAckQueueName;
 
     @Bean
-    public SqsClient sqsClient() {
-        return SqsClient.create();
-    }
-
-    @Bean
     public SQSConnection createConnection(SqsClient sqsClient) throws JMSException {
         SQSConnectionFactory connectionFactory = new SQSConnectionFactory(new ProviderConfiguration(), sqsClient);
         return connectionFactory.createConnection();

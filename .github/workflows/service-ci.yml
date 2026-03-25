@@ -148,7 +148,6 @@ jobs:
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
       requires_localstack: true
       image_prefix: repo/
-      java_version: "25"
       ecr_alias: repo/re-registration-service
     secrets: inherit
 
