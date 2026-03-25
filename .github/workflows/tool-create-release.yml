@@ -6,18 +6,19 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release Tag (format: X.Y.Z, e.g. 1.0.0)'
+        description: "Release Tag (format: X.Y.Z, e.g. 1.0.0)"
         required: true
 
-permissions:
-  id-token: write
-  contents: write
+permissions: {}
 
 jobs:
   create_release:
     name: Run Full Deployment and Re-tag Services
     runs-on: ubuntu-latest
     environment: dev
+    permissions:
+      id-token: write
+      contents: write
     env:
       tag: ${{ inputs.tag }}
     steps:
@@ -28,6 +29,37 @@ jobs:
             exit 1
           fi
 
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Create GitHub Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag $tag
+          git push origin $tag
+
+  full-deployment:
+    name: Full Deployment
+    needs: create_release
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
+    uses: ./.github/workflows/full-deployment.yml
+    secrets: inherit
+
+  re-tag-services:
+    name: Re-tag Services with Release Tag
+    needs: full-deployment
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      tag: ${{ inputs.tag }}
+    steps:
       - name: Configure AWS Credentials
         id: credentials
         uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
@@ -37,22 +69,6 @@ jobs:
           role-skip-session-tagging: true
           mask-aws-account-id: true
 
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          repository: NHSDigital/orphaned-record-continuity
-
-      - name: Create GitHub Tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag $tag
-          git push origin $tag
-
-      - name: Full Deployment
-        uses: ./.github/workflows/full-deployment.yml
-
       - name: Login to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
@@ -61,18 +77,20 @@ jobs:
         env:
           IMAGE_SHA: ${{ github.sha }}
         run: |
-          repo-list=['deductions/ehr-out-service', 
-                      'deductions/ehr-repo', 
-                      'deductions/ehr-transfer-service', 
-                      'deductions/gp2gp-messenger', 
-                      'deductions/mesh-forwarder', 
-                      'deductions/nems-event-processor', 
-                      'deductions/pds-adaptor', 
-                      'repo/re-registration-service', 
-                      'repo/suspension-service']
-          for repo in "${repo-list[@]}"; do
-            repo=${{ steps.credentials.outputs.aws-account-id }}.dkr.ecr.eu-west-2.amazonaws.com/$repo
-            docker pull $repo:$IMAGE_SHA
-            docker tag $repo:$IMAGE_SHA $repo:$tag
-            docker push $repo:$tag
+          repo_list=("deductions/ehr-out-service"
+            "deductions/ehr-repo"
+            "deductions/ehr-transfer-service"
+            "deductions/gp2gp-messenger"
+            "deductions/mesh-forwarder"
+            "deductions/nems-event-processor"
+            "deductions/pds-adaptor"
+            "repo/re-registration-service"
+            "repo/suspension-service"
+          )
+
+          for repo in "${repo_list[@]}"; do
+            full_repo="${{ steps.credentials.outputs.aws-account-id }}.dkr.ecr.eu-west-2.amazonaws.com/${repo}"
+            docker pull "${full_repo}:${IMAGE_SHA}"
+            docker tag "${full_repo}:${IMAGE_SHA}" "${full_repo}:${tag}"
+            docker push "${full_repo}:${tag}"
           done

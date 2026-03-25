@@ -137,7 +137,7 @@ jobs:
       service: pds-adaptor
       environment: dev
       is_deployment: ${{ github.ref == 'refs/heads/main' }}
-      java_version: "11"
+      java_version: "25"
       ecr_alias: deductions/pds-adaptor
     secrets: inherit
 

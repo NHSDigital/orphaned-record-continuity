@@ -2,7 +2,6 @@ package uk.nhs.prm.deductions.pdsadaptor.client;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,12 +51,10 @@ public class AuthenticatingHttpClient implements HttpClient {
         return e.getStatusCode() == HttpStatus.UNAUTHORIZED;
     }
 
-    @NotNull
     private HttpHeaders withRefreshedAuthHeader(HttpHeaders headers) {
         return withAuthHeader(headers, authService.getNewAccessToken());
     }
 
-    @NotNull
     private HttpHeaders withCurrentAuthHeader(HttpHeaders headers) {
         return withAuthHeader(headers, authService.getAccessToken());
     }
