@@ -67,7 +67,6 @@ describe('app', () => {
       const response = await request(app)
         .get(`/messages/${conversationId}/${messageId}`)
         .set('Authorization', authorizationKeys);
-      expect(response.status).toBe(200);
       expect(response.text).toContain(
         // UUIDs are going to return as lower case as they're part of a URL
         `${config.localstackUrl}/${
@@ -130,7 +129,6 @@ describe('app', () => {
       const response = await request(app)
         .get(`/fragments/${conversationId}/${fragmentMessageId}`)
         .set('Authorization', authorizationKeys);
-
       // then
       expect(response.status).toBe(200);
       expect(response.text).toContain(

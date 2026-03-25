@@ -21,11 +21,7 @@ export const authenticateRequest = (req, res, next) => {
   }
 
   if (!validAuthorizationKeys.includes(authorizationKey)) {
-    logWarning(
-      `Unsuccessful Request: ${req.method} ${
-        req.originalUrl
-      }, Invalid API Key presented`
-    );
+    logWarning(`Unsuccessful Request: ${req.method} ${req.originalUrl}, Invalid API Key presented`);
     res.status(403).json({
       error: `Authorization header is provided but not valid`
     });

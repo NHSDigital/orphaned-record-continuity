@@ -26,14 +26,13 @@
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.470.0",
     "@babel/runtime": "^7.17.8",
-    "aws-sdk": "^2.1354.0",
     "axios": "^1.7.2",
     "dateformat": "^4.6.3",
     "dotenv": "^16.0.0",
     "express": "^4.19.2",
     "express-validator": "^6.14.0",
     "express-winston": "^4.2.0",
-    "fast-xml-parser": "^4.2.5",
+    "fast-xml-parser": "^5.5.9",
     "helmet": "^6.0.0",
     "lodash.clonedeep": "^4.5.0",
     "lodash.isequal": "^4.5.0",
@@ -43,7 +42,7 @@
     "traverse": "^0.6.6",
     "uuid": "^8.3.2",
     "winston": "^3.6.0",
-    "xml2js": "^0.5.0",
+    "xml2js": "^0.6.2",
     "xmlserializer": "^0.6.1"
   },
   "devDependencies": {
@@ -79,6 +78,7 @@
     "glob-parent": "^6.0.1",
     "json5": "2.2.2",
     "superagent": "8.0.8",
-    "semver": ">=7.5.2"
+    "semver": ">=7.5.2",
+    "qs": "^6.15.0"
   }
 }
