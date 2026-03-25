@@ -9,7 +9,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 @ResponseStatus(value = HttpStatus.BAD_REQUEST)
 public class BadRequestException extends RuntimeException {
     public BadRequestException(HttpStatusCodeException exception) {
-        super("Received " + exception.getRawStatusCode() + " error from PDS FHIR: error: " + exception.getMessage());
-        log.info("Received " + exception.getRawStatusCode() + " error from PDS FHIR: error: " + exception.getMessage());
+        super("Received " + exception.getStatusCode().value() + " error from PDS FHIR: error: " + exception.getMessage());
+        log.info("Received " + exception.getStatusCode().value() + " error from PDS FHIR: error: " + exception.getMessage());
     }
 }

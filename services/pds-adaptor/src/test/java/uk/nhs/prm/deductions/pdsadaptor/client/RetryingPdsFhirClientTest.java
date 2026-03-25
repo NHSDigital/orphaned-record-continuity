@@ -1,6 +1,5 @@
 package uk.nhs.prm.deductions.pdsadaptor.client;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -97,12 +96,10 @@ class RetryingPdsFhirClientTest {
         assertThat(response).isEqualTo(successfulPdsResponse);
     }
 
-    @NotNull
     private HttpServerErrorException aServerException() {
         return new HttpServerErrorException(SERVICE_UNAVAILABLE, "error");
     }
 
-    @NotNull
     private UpdateManagingOrganisationRequest anUpdateRequest() {
         return new UpdateManagingOrganisationRequest("ODS123", "someTag");
     }

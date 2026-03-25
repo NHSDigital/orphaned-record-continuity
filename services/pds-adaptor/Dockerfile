@@ -1,4 +1,4 @@
-FROM eclipse-temurin:11-jre-alpine-3.23
+FROM eclipse-temurin:25-jre-alpine-3.23
 
 RUN apk update && \
     apk -u list && \

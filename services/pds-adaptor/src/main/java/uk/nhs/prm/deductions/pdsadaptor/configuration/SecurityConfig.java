@@ -1,18 +1,21 @@
 package uk.nhs.prm.deductions.pdsadaptor.configuration;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.MessageDigestPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import uk.nhs.prm.deductions.pdsadaptor.service.ReadSSMParameter;
@@ -22,50 +25,53 @@ import java.util.Map;
 @Configuration
 @EnableWebSecurity
 @Slf4j
-@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
+@EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
+public class SecurityConfig {
 
     @Value("${environment}")
     private String environment;
 
-    public PasswordEncoder passwordEncoder = new MessageDigestPasswordEncoder("SHA-256");
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new MessageDigestPasswordEncoder("SHA-256");
+    }
 
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-        log.info("setting up client auth in configureGlobal");
+    @Bean
+    public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
+        log.info("setting up client auth");
+        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+
         if (!environment.equals("local") && !environment.equals("int-test")) {
             ReadSSMParameter ssmService = new ReadSSMParameter(createSsmClient());
             Map<String, String> userMap = ssmService.getApiKeys(environment);
 
             userMap.forEach((parameterName, apiKey) -> {
-                try {
-                    String username = getUsernameFromParameter(parameterName);
-                    auth.inMemoryAuthentication()
-                        .passwordEncoder(passwordEncoder)
-                        .withUser(username)
+                String username = getUsernameFromParameter(parameterName);
+                manager.createUser(
+                    User.withUsername(username)
                         .password(passwordEncoder.encode(apiKey))
-                            .roles("USER");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                        .roles("USER")
+                        .build()
+                );
             });
         } else {
-            //this for local usage only
-            auth.inMemoryAuthentication()
-                .passwordEncoder(passwordEncoder)
-                .withUser("admin")
-                .password(passwordEncoder.encode("admin"))
-                    .roles("USER");
+            // local usage only
+            manager.createUser(
+                User.withUsername("admin")
+                    .password(passwordEncoder.encode("admin"))
+                    .roles("USER")
+                    .build()
+            );
         }
-        log.info("completed configureGlobal");
+
+        log.info("completed auth setup");
+        return manager;
     }
 
     private SsmClient createSsmClient() {
-        Region region = Region.EU_WEST_2;
-        SsmClient ssmClient = SsmClient.builder()
-                .region(region)
-                .build();
-        return ssmClient;
+        return SsmClient.builder()
+            .region(Region.EU_WEST_2)
+            .build();
     }
 
     private String getUsernameFromParameter(String parameterName) {
@@ -74,29 +80,29 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     private static final String[] AUTH_WHITELIST = {
-            // -- Swagger UI v2
-            "/v2/api-docs",
-            "/swagger-resources",
-            "/swagger-resources/**",
-            "/configuration/ui",
-            "/configuration/security",
-            "/swagger-ui.html",
-            "/swagger/**",
-            "/webjars/**",
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/actuator/health"
-            // other public endpoints of your API may be appended to this array
+        "/v2/api-docs",
+        "/swagger-resources",
+        "/swagger-resources/**",
+        "/configuration/ui",
+        "/configuration/security",
+        "/swagger-ui.html",
+        "/swagger/**",
+        "/webjars/**",
+        "/v3/api-docs/**",
+        "/swagger-ui/**",
+        "/actuator/health"
     };
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and().
-                httpBasic().and().
-                authorizeRequests().
-                antMatchers(AUTH_WHITELIST).permitAll().
-                antMatchers("/**").authenticated();  // require authentication for any endpoint that's not whitelisted
-    }
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/**"))
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .httpBasic(Customizer.withDefaults())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(AUTH_WHITELIST).permitAll()
+                .anyRequest().authenticated());
 
+        return http.build();
+    }
 }

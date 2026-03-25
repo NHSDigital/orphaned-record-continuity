@@ -9,8 +9,6 @@ set -Eeo pipefail
 AWS_DEFAULT_REGION=eu-west-2
 IMAGE_REPO_NAME=deductions/pds-adaptor
 export NHS_SERVICE=pds-adaptor
-AWS_HELPERS_VERSION=0.2.27
-echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
 
 function configure_local_envs {
   export LOG_LEVEL=debug
@@ -40,10 +38,6 @@ case "${command}" in
       configure_local_envs
       ./gradlew test
       ;;
-  test_unit_cached)
-      configure_local_envs
-      ./tasks test_unit
-      ;;
   test_integration)
       configure_local_envs
       ./gradlew --info integration
@@ -53,10 +47,6 @@ case "${command}" in
         _assume_environment_role $NHS_ENVIRONMENT
         test_performance
         ;;
-  test_coverage)
-      configure_local_envs
-      ./gradlew jacocoTestCoverageVerification
-      ;;
   code_quality)
       configure_local_envs
       ./gradlew check -x test -x integration
@@ -73,37 +63,5 @@ case "${command}" in
     configure_local_run_against_aws_env
     ./gradlew bootRun
     ;;
-  tf)
-      check_env
-      tf_init
-      bash
-      ;;
-  tf_plan)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_plan "$2"
-      ;;
-  tf_apply)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      tf_apply
-      ;;
-  promote_docker_image)
-      check_env
-      set_image_tag
-      promote_docker_image "$IMAGE_REPO_NAME:$IMAGE_TAG" "$NHS_ENVIRONMENT"
-      ;;
-  wait_ecs)
-      check_env
-      _assume_environment_role $NHS_ENVIRONMENT
-      aws ecs wait services-stable \
-        --region $AWS_DEFAULT_REGION \
-        --cluster $NHS_ENVIRONMENT-${NHS_SERVICE}-ecs-cluster \
-        --service $NHS_ENVIRONMENT-${NHS_SERVICE}-service
-      ;;
-  *)
-      echo "Invalid command: '${command}'"
-      exit 1
-      ;;
 esac
 set +e

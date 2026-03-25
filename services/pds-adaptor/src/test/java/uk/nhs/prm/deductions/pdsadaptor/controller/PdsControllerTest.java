@@ -3,14 +3,11 @@ package uk.nhs.prm.deductions.pdsadaptor.controller;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import uk.nhs.prm.deductions.pdsadaptor.client.exceptions.AccessTokenRequestException;
 import uk.nhs.prm.deductions.pdsadaptor.client.exceptions.BadRequestException;
@@ -33,7 +30,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static uk.nhs.prm.deductions.pdsadaptor.testing.MapBuilder.json;
 
-@ExtendWith(MockitoExtension.class)
 @WebMvcTest(PdsController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class PdsControllerTest {
@@ -43,10 +39,10 @@ class PdsControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private PdsService pdsService;
 
-    @MockBean
+    @MockitoBean
     private Tracer tracer;
 
     @Test
@@ -88,10 +84,10 @@ class PdsControllerTest {
         when(pdsService.updatePatientManagingOrganisation(NHS_NUMBER, updateRequest)).thenReturn(actualSuspendedPatientStatus);
         doCallRealMethod().when(tracer).setTraceId("fake-trace-id");
 
-        var principal = mock(Principal.class);
+        Principal principal = mock(Principal.class);
         when(principal.getName()).thenReturn("fake-user");
 
-        var contentAsString = mockMvc.perform(put("/suspended-patient-status/" + NHS_NUMBER)
+        String contentAsString = mockMvc.perform(put("/suspended-patient-status/" + NHS_NUMBER)
                 .header("traceId", "fake-trace-id")
                 .principal(principal)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -104,7 +100,7 @@ class PdsControllerTest {
             .andReturn().getResponse().getContentAsString();
 
         verify(pdsService).updatePatientManagingOrganisation(NHS_NUMBER, updateRequest);
-        var suspendedPatientStatus = objectMapper.readValue(contentAsString, SuspendedPatientStatus.class);
+        SuspendedPatientStatus suspendedPatientStatus = objectMapper.readValue(contentAsString, SuspendedPatientStatus.class);
 
         assertThat(suspendedPatientStatus).isEqualTo(actualSuspendedPatientStatus);
 

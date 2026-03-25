@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-	<include resource="org/springframework/boot/logging/logback/console.xml"/>
 	<springProperty scope="context" name="environment" source="environment"/>
 	<property resource="application.properties" />
 	<appender name="INFO_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -73,6 +72,7 @@
 
 	<root level="DEBUG">
 		<appender-ref ref="INFO_CONSOLE" />
+		<appender-ref ref="DEBUG_CONSOLE" />
 	</root>
 
 </configuration>
