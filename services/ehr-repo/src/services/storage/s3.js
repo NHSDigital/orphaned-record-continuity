@@ -1,5 +1,11 @@
 import { initializeConfig } from '../../config';
-import { Endpoint, S3 } from 'aws-sdk';
+import {
+  S3Client,
+  PutObjectCommand,
+  HeadBucketCommand,
+  GetObjectCommand
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dayjs from 'dayjs';
 
 const URL_EXPIRY_TIME = 60;
@@ -8,7 +14,7 @@ const config = initializeConfig();
 
 export default class S3Service {
   constructor() {
-    this.s3 = new S3(this._get_config());
+    this.s3 = new S3Client(this._get_config());
     this.Bucket = config.awsS3BucketName;
   }
 
@@ -21,6 +27,7 @@ export default class S3Service {
     };
 
     const date = dayjs().format('YYYY-MM-DD HH:mm:ss');
+
     return this._isConnected()
       .then(() =>
         this.saveObjectWithName('health-check.txt', date)
@@ -31,52 +38,53 @@ export default class S3Service {
   }
 
   saveObjectWithName(filename, data) {
-    const params = {
+    const command = new PutObjectCommand({
       Bucket: config.awsS3BucketName,
       Key: filename,
       Body: data
-    };
-    return this.s3.putObject(params).promise();
+    });
+
+    return this.s3.send(command);
   }
 
   getPresignedUrlWithFilename(filename, operation) {
     const params = {
       Bucket: this.Bucket,
       Key: filename,
-      Expires: URL_EXPIRY_TIME
+      ...(operation === 'putObject' ? { ContentType: CONTENT_TYPE } : {})
     };
 
-    if (operation === 'putObject') {
-      params.ContentType = CONTENT_TYPE;
-    }
+    const command =
+      operation === 'putObject' ? new PutObjectCommand(params) : new GetObjectCommand(params);
 
-    return this.s3.getSignedUrlPromise(operation, params);
+    return getSignedUrl(this.s3, command, {
+      expiresIn: URL_EXPIRY_TIME
+    });
   }
 
   _isConnected() {
-    return new Promise((resolve, reject) => {
-      this.s3.headBucket(
-        {
-          Bucket: config.awsS3BucketName
-        },
-        (err) => {
-          if (err) reject(err);
-          resolve(true);
-        }
-      );
+    const command = new HeadBucketCommand({
+      Bucket: config.awsS3BucketName
     });
+
+    return this.s3.send(command).then(() => true);
   }
 
   _get_config() {
     if (config.nhsEnvironment === 'local') {
       return {
-        accessKeyId: 'LSIA5678901234567890',
-        secretAccessKey: 'LSIA5678901234567890',
-        endpoint: new Endpoint(config.localstackUrl),
-        s3ForcePathStyle: true
+        region: 'eu-west-2',
+        credentials: {
+          accessKeyId: 'LSIA5678901234567890',
+          secretAccessKey: 'LSIA5678901234567890'
+        },
+        endpoint: config.localstackUrl,
+        forcePathStyle: true
       };
     }
 
-    return {};
+    return {
+      region: process.env.AWS_REGION || 'eu-west-2'
+    };
   }
 }

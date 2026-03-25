@@ -9,35 +9,6 @@ set -Eeo pipefail
 AWS_DEFAULT_REGION=eu-west-2
 IMAGE_REPO_NAME=deductions/gp2gp-messenger
 export NHS_SERVICE=gp2gp-messenger
-AWS_HELPERS_VERSION=0.2.27
-echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
-
-###########################
-# Shared utils            #
-###########################
-
-function download_util() {
-  local UTIL_VERSION=$1
-  local UTIL_FILENAME=$2
-
-  local UTIL_FILEPATH="utils/$UTIL_VERSION/$UTIL_FILENAME"
-
-  mkdir -p "utils/$UTIL_VERSION"
-  if [[ ! -f $UTIL_FILEPATH ]];then
-    wget --quiet -O $UTIL_FILEPATH https://github.com/nhsconnect/prm-deductions-support-infra/releases/download/${UTIL_VERSION}/${UTIL_FILENAME}
-  fi
-  chmod +x $UTIL_FILEPATH
-
-  echo "$UTIL_FILEPATH"
-}
-
-function fetch_redaction_utils() {
-  download_util $AWS_HELPERS_VERSION run-with-redaction.sh
-  download_util $AWS_HELPERS_VERSION redactor
-}
-
-AWS_HELPERS_FILE=$(download_util $AWS_HELPERS_VERSION aws-helpers)
-source $AWS_HELPERS_FILE
 
 
 ####################################
