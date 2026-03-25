@@ -69,7 +69,7 @@ describe('app', () => {
         .set('Authorization', authorizationKeys);
       expect(response.text).toContain(
         // UUIDs are going to return as lower case as they're part of a URL
-        `${config.localstackUrl}${
+        `${config.localstackUrl}/${
           config.awsS3BucketName
         }/${conversationId.toLowerCase()}/${messageId.toLowerCase()}`
       );
@@ -133,7 +133,7 @@ describe('app', () => {
       expect(response.status).toBe(200);
       expect(response.text).toContain(
         // UUIDs are going to return as lower case as they're part of a URL
-        `${config.localstackUrl}${
+        `${config.localstackUrl}/${
           config.awsS3BucketName
         }/${conversationId.toLowerCase()}/${fragmentMessageId.toLowerCase()}`
       );
@@ -328,7 +328,7 @@ describe('app', () => {
       expect(patientRes.status).toEqual(200);
       expect(patientRes.body.coreMessageUrl).toContain(
         // UUIDs are going to return as lower case as they're part of a URL
-        `${config.localstackUrl}${
+        `${config.localstackUrl}/${
           config.awsS3BucketName
         }/${inboundConversationId.toLowerCase()}/${coreMessageId.toLowerCase()}`
       );
