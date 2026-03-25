@@ -42,14 +42,12 @@ export async function transferOutFragmentsForRetriedContinueRequest({
 }) {
   setCurrentSpanAttributes({ conversationId });
   logInfo(`Retrying the EHR Fragment transfer.`);
-  const { inboundConversationId } = await getFragmentConversationAndMessageIdsFromEhrRepo(
-    nhsNumber
-  );
+  const { inboundConversationId } =
+    await getFragmentConversationAndMessageIdsFromEhrRepo(nhsNumber);
   logInfo('Retrieved all fragment Message IDs for transfer.');
 
-  const messageIdsWithReplacementsEligibleForSending = await getAllFragmentIdsToBeSent(
-    inboundConversationId
-  );
+  const messageIdsWithReplacementsEligibleForSending =
+    await getAllFragmentIdsToBeSent(inboundConversationId);
 
   logInfo(
     `Found ${messageIdsWithReplacementsEligibleForSending.length} Message ID replacements eligible to be sent.`

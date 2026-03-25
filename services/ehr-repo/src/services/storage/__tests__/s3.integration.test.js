@@ -1,3 +1,4 @@
+import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { generateMultipleUUID } from '../../../utilities/integration-test-utilities';
 import getSignedUrl from '../get-signed-url';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,28 +10,36 @@ jest.mock('../../../middleware/logging');
 describe('S3Service integration test with localstack', () => {
   const S3CLIENT = new S3Service();
 
-  // ===== HELPER METHODS =====
-  const getObjectByName = (filename) => {
+  const streamToString = async (body) => {
+    if (typeof body?.transformToString === 'function') {
+      return body.transformToString();
+    }
+
+    const chunks = [];
+    for await (const chunk of body) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks).toString('utf-8');
+  };
+
+  const getObjectByName = async (filename) => {
     const getObjectParams = {
       Bucket: S3CLIENT.Bucket,
       Key: filename
     };
-    return S3CLIENT.s3.getObject(getObjectParams).promise();
+
+    return S3CLIENT.s3.send(new GetObjectCommand(getObjectParams));
   };
 
-  // ===== TESTS START FROM HERE =====
   describe('saveObjectWithName', () => {
     it('can save an object in the S3 bucket', async () => {
-      // given
-      const testFileName = uuidv4() + '/' + uuidv4();
+      const testFileName = `${uuidv4()}/${uuidv4()}`;
       const testData = 'Lorem ipsum dolor sit amet';
 
-      // when
       await S3CLIENT.saveObjectWithName(testFileName, testData);
 
-      // then
       const objectInBucket = await getObjectByName(testFileName);
-      const objectContent = objectInBucket.Body.toString();
+      const objectContent = await streamToString(objectInBucket.Body);
 
       expect(objectContent).toEqual(testData);
     });
@@ -45,42 +54,38 @@ describe('S3Service integration test with localstack', () => {
     };
 
     it('return a presigned url for upload when operation = putObject', async () => {
-      // make a presigned url for putObject, upload an object with that url, then verify that the object is in bucket
-      // given
       const [conversationId, messageId] = generateMultipleUUID(2);
       const testFileName = `${conversationId.toLowerCase()}/${messageId.toLowerCase()}`;
       const operation = 'putObject';
+      const body = JSON.stringify(testEhrCore);
 
-      // when
       const presignedUrl = await getSignedUrl(conversationId, messageId, operation);
-      const response = await axios.put(presignedUrl, testEhrCore);
+      const response = await axios.put(presignedUrl, body, {
+        headers: {
+          'Content-Type': 'text/xml'
+        }
+      });
 
-      // then
       expect(response.status).toBe(200);
 
       const objectInBucket = await getObjectByName(testFileName);
-      const objectContent = objectInBucket.Body.toString();
+      const objectContent = await streamToString(objectInBucket.Body);
 
-      expect(objectContent).toEqual(JSON.stringify(testEhrCore));
+      expect(objectContent).toEqual(body);
     });
 
     it('return a presigned url for download when operation = getObject', async () => {
-      // store an object to the S3 bucket, then download it with presigned url
-      // given
       const [conversationId, messageId] = generateMultipleUUID(2);
       const testFileName = `${conversationId.toLowerCase()}/${messageId.toLowerCase()}`;
       const operation = 'getObject';
+      const body = JSON.stringify(testEhrCore);
 
-      await S3CLIENT.saveObjectWithName(testFileName, JSON.stringify(testEhrCore));
+      await S3CLIENT.saveObjectWithName(testFileName, body);
 
-      // when
       const presignedUrl = await getSignedUrl(conversationId, messageId, operation);
       const response = await axios.get(presignedUrl);
 
-      // then
       expect(response.status).toBe(200);
-
-      // verify that the file we download from presignedUrl is same as the file we stored in bucket
       expect(response.data).toEqual(testEhrCore);
     });
   });
