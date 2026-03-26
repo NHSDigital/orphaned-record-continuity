@@ -243,13 +243,13 @@ describe('sds-fhir-client', () => {
   describe('resolveSdsFhirApiKey', () => {
     it('should throw an error when SDS_FHIR_API_KEY is not configured', async () => {
       await expect(resolveSdsFhirApiKey(null)).rejects.toThrow(
-        'SDS FHIR API key is not configured. Please set the SDS_FHIR_API_KEY environment variable.'
+        'SDS FHIR API key is not configured. Please set the SDS_FHIR_API_KEY_SSM_PARAMETER_NAME or SDS_FHIR_API_KEY environment variable.'
       );
       await expect(resolveSdsFhirApiKey(undefined)).rejects.toThrow(
-        'SDS FHIR API key is not configured. Please set the SDS_FHIR_API_KEY environment variable.'
+        'SDS FHIR API key is not configured. Please set the SDS_FHIR_API_KEY_SSM_PARAMETER_NAME or SDS_FHIR_API_KEY environment variable.'
       );
       await expect(resolveSdsFhirApiKey('')).rejects.toThrow(
-        'SDS FHIR API key is not configured. Please set the SDS_FHIR_API_KEY environment variable.'
+        'SDS FHIR API key is not configured. Please set the SDS_FHIR_API_KEY_SSM_PARAMETER_NAME or SDS_FHIR_API_KEY environment variable.'
       );
     });
 
