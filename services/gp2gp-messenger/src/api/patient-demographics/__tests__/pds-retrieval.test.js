@@ -223,8 +223,8 @@ describe('/patient-demographics/:nhsNumber', () => {
     request(app)
       .get('/patient-demographics/9999999999')
       .expect(() => {
-        expect(logError).toBeCalledTimes(1);
-        expect(logError).toBeCalledWith(
+        expect(logError).toHaveBeenCalledTimes(1);
+        expect(logError).toHaveBeenCalledWith(
           'PDS retrieval error',
           Error('Unexpected Error: MHS error')
         );
@@ -254,8 +254,8 @@ describe('/patient-demographics/:nhsNumber', () => {
     request(app)
       .get('/patient-demographics/9999999999')
       .expect(() => {
-        expect(logError).toBeCalledTimes(1);
-        expect(logError).toBeCalledWith(
+        expect(logError).toHaveBeenCalledTimes(1);
+        expect(logError).toHaveBeenCalledWith(
           'PDS retrieval error',
           Error('Check template parameter error: asid is undefined')
         );
@@ -281,8 +281,8 @@ describe('/patient-demographics/:nhsNumber', () => {
     request(app)
       .get('/patient-demographics/9999999999')
       .expect(() => {
-        expect(logError).toBeCalledTimes(1);
-        expect(logError).toBeCalledWith(
+        expect(logError).toHaveBeenCalledTimes(1);
+        expect(logError).toHaveBeenCalledWith(
           'PDS retrieval error',
           Error('interactionId is not included in the message')
         );

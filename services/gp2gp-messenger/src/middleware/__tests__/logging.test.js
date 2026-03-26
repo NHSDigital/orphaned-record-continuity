@@ -8,7 +8,7 @@ describe('logging', () => {
     it('should log with level info', () => {
       logInfo('info');
 
-      expect(logger.info).toBeCalledTimes(1);
+      expect(logger.info).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -16,7 +16,7 @@ describe('logging', () => {
     it('should log with level error', () => {
       logError('error');
 
-      expect(logger.error).toBeCalledTimes(1);
+      expect(logger.error).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -44,7 +44,7 @@ describe('logging', () => {
       };
 
       eventFinished(mockReq, mockRes);
-      expect(logger.info).toBeCalledTimes(1);
+      expect(logger.info).toHaveBeenCalledTimes(1);
     });
 
     it('should log with level error if status code is not successful', () => {
@@ -54,7 +54,7 @@ describe('logging', () => {
       };
 
       eventFinished(mockReq, mockRes);
-      expect(logger.error).toBeCalledTimes(1);
+      expect(logger.error).toHaveBeenCalledTimes(1);
     });
   });
 });

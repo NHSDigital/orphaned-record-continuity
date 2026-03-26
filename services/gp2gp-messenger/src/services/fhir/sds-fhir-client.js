@@ -1,9 +1,53 @@
 import axios from 'axios';
 import { initializeConfig } from '../../config';
 import { logError, logInfo } from '../../middleware/logging';
+import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+
+const sdsFhirApiKeyCache = {};
+
+export const resolveSdsFhirApiKey = async configuredValue => {
+  if (!configuredValue) {
+    throw new Error('SDS FHIR API key is not configured. Please set the SDS_FHIR_API_KEY environment variable.');
+  }
+
+  const isSsmReference = configuredValue.startsWith('ssm:') || configuredValue.startsWith('/');
+  if (!isSsmReference) {
+    return configuredValue;
+  }
+
+  const parameterName = configuredValue.startsWith('ssm:')
+    ? configuredValue.substring('ssm:'.length).trim()
+    : configuredValue.trim();
+
+  if (!parameterName) {
+    throw new Error(`SDS FHIR API key SSM parameter name is empty: "${parameterName}"`);
+  }
+
+  if (sdsFhirApiKeyCache[parameterName]) {
+    return sdsFhirApiKeyCache[parameterName];
+  }
+
+  const ssmClient = new SSMClient({});
+  const command = new GetParameterCommand({
+    Name: parameterName,
+    WithDecryption: true
+  });
+
+  const response = await ssmClient.send(command);
+  const value = response.Parameter && response.Parameter.Value;
+
+  if (!value) {
+    throw new Error(`SDS FHIR API key could not be resolved from SSM parameter "${parameterName}"`);
+  }
+
+  sdsFhirApiKeyCache[parameterName] = value;
+  return value;
+};
 
 export const getPracticeAsid = async (odsCode, serviceId) => {
-  const { sdsFhirUrl, sdsFhirApiKey } = initializeConfig();
+  const { sdsFhirUrl, sdsFhirApiKeyParameterName } = initializeConfig();
+  const sdsFhirApiKey = await resolveSdsFhirApiKey(sdsFhirApiKeyParameterName);
+
   logInfo(`Getting ASID via FHIR for ODS code ${odsCode}`);
   try {
     const response = await axios.get(`${sdsFhirUrl}/Device`, {

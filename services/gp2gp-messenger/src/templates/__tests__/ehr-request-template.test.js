@@ -26,13 +26,13 @@ describe('generateEhrRequestQuery', () => {
   };
 
   it('should throw error when nhsNumber is not defined in inputObject', () => {
-    expect(() => generateEhrRequestQuery(requestWithoutPatientDetails)).toThrowError(
+    expect(() => generateEhrRequestQuery(requestWithoutPatientDetails)).toThrow(
       'Check template parameter error: nhsNumber is undefined'
     );
   });
 
   it('should not throw error when all required arguments are defined', () => {
-    expect(() => generateEhrRequestQuery(validRequest)).not.toThrowError();
+    expect(() => generateEhrRequestQuery(validRequest)).not.toThrow();
   });
 
   it('should have populate the xml template with all the required fields', () => {
@@ -74,7 +74,7 @@ describe('generateEhrRequestQuery', () => {
         id: uuid(),
         timestamp: '20200403092516'
       })
-    ).toThrowError(
+    ).toThrow(
       'Check template parameter error: asid is undefined, odsCode is undefined, asid is undefined, odsCode is undefined'
     );
   });

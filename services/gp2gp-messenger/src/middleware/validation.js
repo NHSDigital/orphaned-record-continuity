@@ -8,7 +8,7 @@ export const validate = (req, res, next) => {
     return next();
   }
 
-  const mappedErrors = errors.array().map(err => ({ [err.param]: err.msg }));
+  const mappedErrors = errors.array().map(err => ({ [err.path || err.param]: err.msg }));
   logError('validation-failed', {
     errors: mappedErrors
   });

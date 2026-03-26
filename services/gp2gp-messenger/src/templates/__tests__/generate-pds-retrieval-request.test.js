@@ -23,7 +23,7 @@ describe('generatePdsRetrievalQuery', () => {
   };
 
   it('should throw error when nhsNumber is not defined in inputObject', () => {
-    return expect(generatePdsRetrievalQuery(testObjectMissing)).rejects.toThrowError(
+    return expect(generatePdsRetrievalQuery(testObjectMissing)).rejects.toThrow(
       'nhsNumber is undefined'
     );
   });
@@ -79,6 +79,6 @@ describe('generatePdsRetrievalQuery', () => {
           nhsNumber: testData.tppPatient.nhsNumber
         }
       })
-    ).rejects.toThrowError('Check template parameter error: asid is undefined, asid is undefined');
+    ).rejects.toThrow('Check template parameter error: asid is undefined, asid is undefined');
   });
 });

@@ -51,7 +51,7 @@ describe('generateContinueRequest', () => {
         ehrExtractMessageId,
         gpOdsCode
       };
-      expect(() => generateContinueRequest(inputValues)).toThrowError(errorMessage);
+      expect(() => generateContinueRequest(inputValues)).toThrow(errorMessage);
     });
 
     it('should throw error when receivingAsid is not defined in inputObject', () => {
@@ -62,7 +62,7 @@ describe('generateContinueRequest', () => {
         ehrExtractMessageId,
         gpOdsCode
       };
-      expect(() => generateContinueRequest(inputValues)).toThrowError(errorMessage);
+      expect(() => generateContinueRequest(inputValues)).toThrow(errorMessage);
     });
 
     it('should throw error when sendingAsid is not defined in inputObject', () => {
@@ -73,7 +73,7 @@ describe('generateContinueRequest', () => {
         ehrExtractMessageId,
         gpOdsCode
       };
-      expect(() => generateContinueRequest(inputValues)).toThrowError(errorMessage);
+      expect(() => generateContinueRequest(inputValues)).toThrow(errorMessage);
     });
 
     it('should throw error when ehrExtractMessageId is not defined in inputObject', () => {
@@ -86,7 +86,7 @@ describe('generateContinueRequest', () => {
         sendingAsid,
         gpOdsCode
       };
-      expect(() => generateContinueRequest(inputValues)).toThrowError(errorMessage);
+      expect(() => generateContinueRequest(inputValues)).toThrow(errorMessage);
     });
 
     it('should throw error when gpOdsCode is not defined in inputObject', () => {
@@ -97,7 +97,7 @@ describe('generateContinueRequest', () => {
         sendingAsid,
         ehrExtractMessageId
       };
-      expect(() => generateContinueRequest(inputValues)).toThrowError(errorMessage);
+      expect(() => generateContinueRequest(inputValues)).toThrow(errorMessage);
     });
   });
 });
