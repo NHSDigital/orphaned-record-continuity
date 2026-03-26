@@ -10,7 +10,7 @@
     "lint:fix": "npm run lint -- --fix",
     "test": "npm run lint:fix && npm run test:unit && npm run test:integration",
     "test:coverage-unit-test-only": "jest src/ --testPathIgnorePatterns=\"**/*integration.test.js\" --maxWorkers=1 --coverage --detectOpenHandles --forceExit --setupFiles dotenv/config",
-    "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest src/ --setupFiles dotenv/config --detectOpenHandles",
+    "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest \"src/(?!(.*\\integration.test\\.js))\" --setupFiles dotenv/config --detectOpenHandles",
     "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest src/ --testMatch=\"**/*integration.test.js\" --detectOpenHandles --forceExit --setupFiles dotenv/config",
     "test:functional": "jest test/functional/*",
     "test:functional:opentest": "jest \"test/functional/\" --testPathIgnorePatterns=\"test/functional/health-record-requests.test.js\"",
@@ -71,8 +71,7 @@
       ".*/__tests__/data/.*",
       ".*/test-utils.js",
       ".*/test/e2e/.*",
-      ".*/test/functional/.*",
-      "integration\\.test\\.js$"
+      ".*/test/functional/.*"
     ],
     "resetModules": true,
     "clearMocks": true,
