@@ -7,7 +7,9 @@ const sdsFhirApiKeyCache = {};
 
 export const resolveSdsFhirApiKey = async configuredValue => {
   if (!configuredValue) {
-    throw new Error('SDS FHIR API key is not configured. Please set the SDS_FHIR_API_KEY environment variable.');
+    throw new Error(
+      'SDS FHIR API key is not configured. Please set the SDS_FHIR_API_KEY environment variable.'
+    );
   }
 
   const isSsmReference = configuredValue.startsWith('ssm:') || configuredValue.startsWith('/');

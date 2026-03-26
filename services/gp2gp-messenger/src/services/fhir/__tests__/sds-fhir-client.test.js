@@ -11,7 +11,7 @@ jest.mock('@aws-sdk/client-ssm', () => ({
   SSMClient: jest.fn().mockImplementation(() => ({
     send: mockSsmSend
   })),
-  GetParameterCommand: jest.fn().mockImplementation((input) => ({ input }))
+  GetParameterCommand: jest.fn().mockImplementation(input => ({ input }))
 }));
 
 describe('sds-fhir-client', () => {
@@ -110,7 +110,10 @@ describe('sds-fhir-client', () => {
 
   it('should resolve the API key from SSM when SDS_FHIR_API_KEY is an SSM parameter reference', async () => {
     const sdsFhirApiKeyProperty = 'ssm:/sds-fhir/key';
-    initializeConfig.mockReturnValueOnce({ sdsFhirUrl, sdsFhirApiKeyParameterName: sdsFhirApiKeyProperty });
+    initializeConfig.mockReturnValueOnce({
+      sdsFhirUrl,
+      sdsFhirApiKeyParameterName: sdsFhirApiKeyProperty
+    });
     mockSsmSend.mockResolvedValueOnce({ Parameter: { Value: 'resolved-key' } });
 
     const scope = nock(sdsFhirUrl, {
