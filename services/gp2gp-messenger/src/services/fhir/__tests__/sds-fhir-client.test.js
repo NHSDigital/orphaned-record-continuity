@@ -308,7 +308,7 @@ describe('sds-fhir-client', () => {
       mockSsmSend.mockResolvedValueOnce({ Parameter: null });
 
       await expect(resolveSdsFhirApiKey(parameterName)).rejects.toThrow(
-        'SDS FHIR API key could not be resolved from SSM parameter "/error/test"'
+        'SDS FHIR API key could not be resolved from SSM parameter'
       );
     });
 

@@ -22,7 +22,7 @@ export const resolveSdsFhirApiKey = async configuredValue => {
     : configuredValue.trim();
 
   if (!parameterName) {
-    throw new Error(`SDS FHIR API key SSM parameter name is empty: "${parameterName}"`);
+    throw new Error(`SDS FHIR API key SSM parameter name is empty"`);
   }
 
   if (sdsFhirApiKeyCache[parameterName]) {
@@ -39,7 +39,7 @@ export const resolveSdsFhirApiKey = async configuredValue => {
   const value = response.Parameter && response.Parameter.Value;
 
   if (!value) {
-    throw new Error(`SDS FHIR API key could not be resolved from SSM parameter "${parameterName}"`);
+    throw new Error(`SDS FHIR API key could not be resolved from SSM parameter`);
   }
 
   sdsFhirApiKeyCache[parameterName] = value;
