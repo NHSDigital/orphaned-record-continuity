@@ -28,6 +28,9 @@ import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException;
+import software.amazon.awssdk.services.ssm.SsmClient;
+import software.amazon.awssdk.services.ssm.model.ParameterType;
+import software.amazon.awssdk.services.ssm.model.PutParameterRequest;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -38,6 +41,10 @@ import java.util.Map;
 
 @TestConfiguration
 public class LocalStackAwsConfig {
+    private static final Region LOCALSTACK_REGION = Region.EU_WEST_2;
+
+    private static final StaticCredentialsProvider LOCALSTACK_CREDENTIALS =
+            StaticCredentialsProvider.create(AwsBasicCredentials.create("LSIA5678901234567890", "LSIA5678901234567890"));
 
     @Value("${aws.reRegistrationsQueueName}")
     private String reRegistrationsQueueName;
@@ -58,17 +65,26 @@ public class LocalStackAwsConfig {
     private SqsClient sqsClient;
 
     @Autowired
+    private SsmClient ssmClient;
+
+    @Autowired
     private DynamoDbClient dynamoDbClient;
 
     @Value("${aws.activeSuspensionsDynamoDbTableName}")
     private String activeSuspensionsDynamoDbTableName;
 
+    @Value("${pdsAdaptor.authPasswordSsmParameterName}")
+    private String authPasswordSsmParameterName;
+
+    @Value("${ehrRepoAuthKeySsmParameterName}")
+    private String ehrRepoAuthKeySsmParameterName;
+
     @Bean
     public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) {
         return SqsClient.builder()
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("FAKE", "FAKE")))
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.EU_WEST_2)
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
                 .build();
     }
 
@@ -76,18 +92,17 @@ public class LocalStackAwsConfig {
     public static SnsClient snsClient(@Value("${localstack.url}") String localstackUrl) {
         return SnsClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.EU_WEST_2)
-                .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
-                    @Override
-                    public String accessKeyId() {
-                        return "FAKE";
-                    }
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
+                .build();
+    }
 
-                    @Override
-                    public String secretAccessKey() {
-                        return "FAKE";
-                    }
-                }))
+    @Bean
+    public static SsmClient ssmClient(@Value("${localstack.url}") String localstackUrl) {
+        return SsmClient.builder()
+                .endpointOverride(URI.create(localstackUrl))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
                 .build();
     }
 
@@ -95,19 +110,8 @@ public class LocalStackAwsConfig {
     public static DynamoDbClient dynamoDbClient(@Value("${localstack.url}") String localstackUrl) {
         return DynamoDbClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.EU_WEST_2)
-                .credentialsProvider(
-                        StaticCredentialsProvider.create(new AwsCredentials() {
-                            @Override
-                            public String accessKeyId() {
-                                return "FAKE";
-                            }
-
-                            @Override
-                            public String secretAccessKey() {
-                                return "FAKE";
-                            }
-                        }))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
                 .build();
     }
 
@@ -121,7 +125,25 @@ public class LocalStackAwsConfig {
 
         createSnsTestReceiverSubscription(topic, getQueueArn(reRegistrationsAuditQueue.queueUrl()));
 
+        setupSsmParameters();
+
         setupDbAndTable();
+    }
+
+    private void setupSsmParameters() {
+        ssmClient.putParameter(PutParameterRequest.builder()
+                .name(authPasswordSsmParameterName)
+                .value("test")
+                .type(ParameterType.SECURE_STRING)
+                .overwrite(true)
+                .build());
+
+        ssmClient.putParameter(PutParameterRequest.builder()
+                .name(ehrRepoAuthKeySsmParameterName)
+                .value("test")
+                .type(ParameterType.SECURE_STRING)
+                .overwrite(true)
+                .build());
     }
 
     private void setupDbAndTable() {

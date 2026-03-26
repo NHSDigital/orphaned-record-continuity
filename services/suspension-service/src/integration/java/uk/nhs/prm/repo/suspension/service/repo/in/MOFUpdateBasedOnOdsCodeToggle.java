@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ContextConfiguration(classes = LocalStackAwsConfig.class)
 @DirtiesContext
 public class MOFUpdateBasedOnOdsCodeToggle {
+    private static final String AUTHORIZATION_HEADER = "Basic c3VzcGVuc2lvbi1zZXJ2aWNlOnRlc3Q=";
 
     @Autowired
     private SqsClient sqs;
@@ -111,12 +112,12 @@ public class MOFUpdateBasedOnOdsCodeToggle {
 
     private void stubForPdsAdaptor(String nhsNumber, String suspendedResponse) {
         stubPdsAdaptor.stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponseWith(nhsNumber))));
         stubPdsAdaptor.stubFor(put(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(suspendedResponse)));

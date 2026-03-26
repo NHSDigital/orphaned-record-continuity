@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ContextConfiguration(classes = LocalStackAwsConfig.class)
 @DirtiesContext
 public class SuspensionsIntegrationTest {
+    private static final String AUTHORIZATION_HEADER = "Basic c3VzcGVuc2lvbi1zZXJ2aWNlOnRlc3Q=";
 
     @Autowired
     private SqsClient sqs;
@@ -87,7 +88,7 @@ public class SuspensionsIntegrationTest {
     void shouldSendSuspensionMessageToNotSuspendedSNSTopicIfNoLongerSuspendedInPDS() {
         var nhsNumber = Long.toString(System.currentTimeMillis());
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(getNotSuspendedResponseWith(nhsNumber))));
@@ -109,12 +110,12 @@ public class SuspensionsIntegrationTest {
     void shouldUpdateManagingOrganisationAndSendMessageToMofUpdatedSNSTopicForSuspendedPatient() {
         var nhsNumber = Long.toString(System.currentTimeMillis());
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponseWith(nhsNumber))));
         stubFor(put(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponseWith(nhsNumber))));
@@ -151,12 +152,12 @@ public class SuspensionsIntegrationTest {
         var nhsNumber = Long.toString(System.currentTimeMillis());
 
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponseWith(nhsNumber))));
         stubFor(put(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponseWith(nhsNumber))));
@@ -191,12 +192,12 @@ public class SuspensionsIntegrationTest {
     void shouldPutDLQsWhenPdsAdaptorReturn400() {
         var nhsNumber = Long.toString(System.currentTimeMillis());
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponseWith(nhsNumber))));
         stubFor(put(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withStatus(400)
                         .withHeader("Content-Type", "application/json")));

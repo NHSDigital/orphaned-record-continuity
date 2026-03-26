@@ -7,7 +7,7 @@ services:
     network_mode: bridge
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
-      - SERVICES=sqs,sns,dynamodb,cloudwatch
+      - SERVICES=sqs,sns,ssm,dynamodb,cloudwatch
       - GATEWAY_LISTEN=4566
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"

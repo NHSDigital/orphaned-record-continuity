@@ -22,6 +22,10 @@ import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 
 import jakarta.annotation.PostConstruct;
+import software.amazon.awssdk.services.ssm.SsmClient;
+import software.amazon.awssdk.services.ssm.model.ParameterType;
+import software.amazon.awssdk.services.ssm.model.PutParameterRequest;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +34,6 @@ import java.util.Map;
 
 @TestConfiguration
 public class LocalStackAwsConfig {
-
     private static final Region LOCALSTACK_REGION = Region.EU_WEST_2;
 
     private static final StaticCredentialsProvider LOCALSTACK_CREDENTIALS =
@@ -41,6 +44,9 @@ public class LocalStackAwsConfig {
 
     @Autowired
     private SnsClient snsClient;
+
+    @Autowired
+    private SsmClient ssmClient;
 
     @Autowired
     private DynamoDbClient dynamoDbClient;
@@ -75,6 +81,9 @@ public class LocalStackAwsConfig {
     @Value("${aws.activeSuspensionsQueueName}")
     private String activeSuspensionsQueueName;
 
+    @Value("${pdsAdaptor.suspensionService.passwordSsmParameterName}")
+    private String authPasswordSsmParameterName;
+
     @Bean
     public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) {
         return SqsClient.builder()
@@ -87,6 +96,15 @@ public class LocalStackAwsConfig {
     @Bean
     public static SnsClient snsClient(@Value("${localstack.url}") String localstackUrl) {
         return SnsClient.builder()
+                .endpointOverride(URI.create(localstackUrl))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
+                .build();
+    }
+
+    @Bean
+    public static SsmClient ssmClient(@Value("${localstack.url}") String localstackUrl) {
+        return SsmClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
                 .region(LOCALSTACK_REGION)
                 .credentialsProvider(LOCALSTACK_CREDENTIALS)
@@ -113,7 +131,7 @@ public class LocalStackAwsConfig {
     }
 
     @PostConstruct
-    public void setupTestQueuesAndTopics() {
+    public void initialSetup() {
         sqsClient.createQueue(builder -> builder.queueName(suspensionsQueueName));
         sqsClient.createQueue(builder -> builder.queueName(ackQueueName));
         CreateQueueResponse notSuspendedQueue = sqsClient.createQueue(builder -> builder.queueName(notSuspendedQueueName));
@@ -141,7 +159,18 @@ public class LocalStackAwsConfig {
         createSnsTestReceiverSubscription(repoIncomingTopic, getQueueArn(incomingQueue.queueUrl()));
         createSnsTestReceiverSubscription(activeSuspensionsTopic, getQueueArn(activeSuspensionsQueue.queueUrl()));
 
+        setupSsmParameters();
+
         setupDbAndTable();
+    }
+
+    private void setupSsmParameters() {
+        ssmClient.putParameter(PutParameterRequest.builder()
+                .name(authPasswordSsmParameterName)
+                .value("test")
+                .type(ParameterType.SECURE_STRING)
+                .overwrite(true)
+                .build());
     }
 
     private void setupDbAndTable() {
@@ -179,6 +208,7 @@ public class LocalStackAwsConfig {
         dynamoDbClient.createTable(createTableRequest);
         waiter.waitUntilTableExists(tableRequest);
     }
+
 
     private void resetTableForLocalEnvironment(DynamoDbWaiter waiter, DescribeTableRequest tableRequest) {
         var deleteRequest = DeleteTableRequest.builder().tableName(suspensionDynamoDbTableName).build();

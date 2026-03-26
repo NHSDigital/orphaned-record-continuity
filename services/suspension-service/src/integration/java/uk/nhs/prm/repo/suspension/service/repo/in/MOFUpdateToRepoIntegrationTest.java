@@ -73,12 +73,12 @@ public class MOFUpdateToRepoIntegrationTest {
     void shouldSetMOFAsRepoOdsCodeWhenToggleOn() {
         var nhsNumber = Long.toString(System.currentTimeMillis());
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponseWith(nhsNumber))));
         stubFor(put(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponseWithRepoOdsCode(nhsNumber))));

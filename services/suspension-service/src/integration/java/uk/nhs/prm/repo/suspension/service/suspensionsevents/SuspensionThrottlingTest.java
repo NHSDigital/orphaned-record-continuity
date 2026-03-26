@@ -1,10 +1,7 @@
 package uk.nhs.prm.repo.suspension.service.suspensionsevents;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ContextConfiguration(classes = LocalStackAwsConfig.class)
 @DirtiesContext
 public class SuspensionThrottlingTest {
+    private static final String AUTHORIZATION_HEADER = "Basic c3VzcGVuc2lvbi1zZXJ2aWNlOnRlc3Q=";
 
     @Autowired
     private SqsClient sqs;
@@ -164,7 +162,7 @@ public class SuspensionThrottlingTest {
         setPdsErrorState("Second Cause Success", "Third Cause Success", 3, nhsNumber);
 
         stubFor(get(urlEqualTo("/suspended-patient-status/" + nhsNumber)).atPriority(4)
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .inScenario("Retry Scenario")
                 .whenScenarioStateIs("Third Cause Success")
                 .willReturn(aResponse()
@@ -175,7 +173,7 @@ public class SuspensionThrottlingTest {
 
     private void setPdsErrorState(String startingState, String finishedState, int priority, String nhsNumber) {
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber)).atPriority(priority)
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .inScenario("Retry Scenario")
                 .whenScenarioStateIs(startingState)
                 .willReturn(aResponse()
@@ -194,14 +192,14 @@ public class SuspensionThrottlingTest {
     private void stubbinForGenericPdsResponses(int getRequestDelay, int putRequestDelay) {
         var anyNhsNumber = ".*";
         stubFor(get(urlMatching("/suspended-patient-status/" + anyNhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withFixedDelay(getRequestDelay)
                         .withHeader("Content-Type", "application/json")
                         .withBody(getSuspendedResponse())));
         stubFor(put(urlMatching("/suspended-patient-status/" + anyNhsNumber))
-                .withHeader("Authorization", matching("Basic c3VzcGVuc2lvbi1zZXJ2aWNlOiJ0ZXN0Ig=="))
+                .withHeader("Authorization", matching(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withFixedDelay(putRequestDelay)

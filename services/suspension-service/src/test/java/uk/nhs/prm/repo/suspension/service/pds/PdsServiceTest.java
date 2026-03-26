@@ -1,7 +1,5 @@
 package uk.nhs.prm.repo.suspension.service.pds;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +12,7 @@ import org.springframework.web.client.HttpServerErrorException;
 import uk.nhs.prm.repo.suspension.service.http.RateLimitHttpClient;
 import uk.nhs.prm.repo.suspension.service.model.PdsAdaptorSuspensionStatusResponse;
 import uk.nhs.prm.repo.suspension.service.model.UpdateManagingOrganisationRequest;
+import uk.nhs.prm.repo.suspension.service.service.SsmService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,19 +23,25 @@ import static uk.nhs.prm.repo.suspension.service.logging.TestLogAppender.addTest
 
 @ExtendWith(MockitoExtension.class)
 class PdsServiceTest {
-
     @Mock
-    private RateLimitHttpClient client;
+    private SsmService ssmService;
 
     @Mock
     private PdsAdaptorSuspensionStatusResponseParser responseParser;
 
+    @Mock
+    private RateLimitHttpClient client;
+
     private PdsService pdsService;
+
+    private String serviceUrl = "http://pds-adaptor";
+
+    private String suspensionServicePasswordSsmParameterName = "passwordSsmParameterName";
 
     @BeforeEach
     public void setUp() {
-        pdsService = new PdsService(responseParser, client);
-        setField(pdsService, "serviceUrl", "http://pds-adaptor"); // @todo fertling :/
+        pdsService = new PdsService(ssmService, responseParser, client, serviceUrl, suspensionServicePasswordSsmParameterName);
+        // normally retrieved from SSM post-construction, but set directly here for testing
         setField(pdsService, "suspensionServicePassword", "PASS");
     }
 

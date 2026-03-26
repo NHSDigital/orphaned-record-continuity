@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -29,12 +28,10 @@ public class EhrRepoServiceIntegrationTest {
     @Autowired
     private EhrRepoService ehrRepoService;
 
-    @Value("${ehrRepoAuthKey}")
-    private String authKey;
-
     private WireMockServer stubEhrRepo;
 
     public static final String NHS_NUMBER = "1234567890";
+    private static final String AUTHORIZATION_HEADER = "test";
     private static final String NEMS_MESSAGE_ID = "nemsMessageId";
     public static final String CONVERSATION_ID1 = "2431d4ff-f760-4ab9-8cd8-a3fc47846762";
     public static final String CONVERSATION_ID2 = "c184cc19-86e9-4a95-b5b5-2f156900bb3c";
@@ -70,7 +67,7 @@ public class EhrRepoServiceIntegrationTest {
 
     private void ehrRepo200Response() {
         stubFor(delete(urlMatching("/patients/" + NHS_NUMBER))
-                .withHeader("Authorization", matching(authKey))
+                .withHeader("Authorization", equalTo(AUTHORIZATION_HEADER))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withBody("{\n" +
