@@ -1,6 +1,6 @@
 import { updateFragmentForSending } from '../update-fragment-for-sending';
 import { XmlParser } from '../../xml-parser/xml-parser';
-import { templateLargeEhrFragmentTestMessage } from '../../../../templates/__tests__/test-fragment-message-payload-template';
+import { templateLargeEhrFragmentTestMessage } from '../../../../templates/__tests__/data/test-fragment-message-payload-template';
 import { initializeConfig } from '../../../../config';
 
 jest.mock('../../../../config');

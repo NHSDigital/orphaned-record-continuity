@@ -26,7 +26,7 @@ describe('generateUpdateOdsRequest', () => {
   };
 
   it('should throw error when nhsNumber is not defined in inputObject', () => {
-    expect(() => generateUpdateOdsRequest(updateRequestWithoutPatientDetails)).toThrowError(
+    expect(() => generateUpdateOdsRequest(updateRequestWithoutPatientDetails)).toThrow(
       'Check template parameter error: nhsNumber is undefined, pdsId is undefined, pdsUpdateChangeNumber is undefined'
     );
   });
@@ -42,13 +42,13 @@ describe('generateUpdateOdsRequest', () => {
           pdsUpdateChangeNumber: testData.tppPatient.serialChangeNumber
         }
       })
-    ).toThrowError(
+    ).toThrow(
       'Check template parameter error: asid is undefined, asid is undefined, newOdsCode is undefined'
     );
   });
 
   it('should not throw error when all required arguments are defined', () => {
-    expect(() => generateUpdateOdsRequest(validUpdateRequest)).not.toThrowError();
+    expect(() => generateUpdateOdsRequest(validUpdateRequest)).not.toThrow();
   });
 
   it('should have populate the xml template with all the required fields', () => {

@@ -85,7 +85,7 @@ describe('mhs-outbound-client', () => {
   });
 
   it('throws an Error if interactionId is not passed in', () => {
-    return expect(sendMessage({ conversationId, odsCode, message })).rejects.toThrowError(
+    return expect(sendMessage({ conversationId, odsCode, message })).rejects.toThrow(
       Error('interactionId must be passed in')
     );
   });
@@ -94,7 +94,7 @@ describe('mhs-outbound-client', () => {
     const odsCode = 'A123';
     const response = await sendMessage({ interactionId, conversationId, message, odsCode });
     expect(response.status).toBe(200);
-    expect(axios.post).toBeCalledWith(url, axiosBody, {
+    expect(axios.post).toHaveBeenCalledWith(url, axiosBody, {
       headers: {
         ...axiosHeaders.headers,
         'Ods-Code': odsCode
@@ -112,7 +112,7 @@ describe('mhs-outbound-client', () => {
       attachments
     });
     expect(response.status).toBe(200);
-    expect(axios.post).toBeCalledWith(
+    expect(axios.post).toHaveBeenCalledWith(
       url,
       { ...axiosBody, attachments },
       {
@@ -133,7 +133,7 @@ describe('mhs-outbound-client', () => {
       external_attachments
     });
     expect(response.status).toBe(200);
-    expect(axios.post).toBeCalledWith(
+    expect(axios.post).toHaveBeenCalledWith(
       url,
       { ...axiosBody, external_attachments },
       {
@@ -156,7 +156,7 @@ describe('mhs-outbound-client', () => {
       external_attachments
     });
     expect(response.status).toBe(200);
-    expect(axios.post).toBeCalledWith(
+    expect(axios.post).toHaveBeenCalledWith(
       url,
       { ...axiosBody, attachments, external_attachments },
       {
@@ -171,7 +171,7 @@ describe('mhs-outbound-client', () => {
     const interactionId = 'PRPA_IN000203UK03';
     const response = await sendMessage({ interactionId, conversationId, odsCode, message });
     expect(response.status).toBe(200);
-    expect(axios.post).toBeCalledWith(url, axiosBody, {
+    expect(axios.post).toHaveBeenCalledWith(url, axiosBody, {
       headers: {
         ...axiosHeaders.headers,
         'Interaction-ID': interactionId,
@@ -183,7 +183,7 @@ describe('mhs-outbound-client', () => {
   it('should call axios with wait-for-response header set to false for messages that do not support sync-async in mhs', async () => {
     const response = await sendMessage({ interactionId, conversationId, odsCode, message });
     expect(response.status).toBe(200);
-    expect(axios.post).toBeCalledWith(url, axiosBody, {
+    expect(axios.post).toHaveBeenCalledWith(url, axiosBody, {
       headers: {
         ...axiosHeaders.headers,
         'wait-for-response': 'false'
@@ -194,7 +194,7 @@ describe('mhs-outbound-client', () => {
   it('should use null for messageId by default, not pass it in headers, and return 200', async () => {
     const response = await sendMessage({ interactionId, conversationId, odsCode, message });
     expect(response.status).toBe(200);
-    expect(axios.post).toBeCalledWith(url, axiosBody, axiosHeaders);
+    expect(axios.post).toHaveBeenCalledWith(url, axiosBody, axiosHeaders);
   });
 
   it('should call axios with specified messageId if passed in and return 200', async () => {
@@ -207,7 +207,7 @@ describe('mhs-outbound-client', () => {
       messageId
     });
     expect(response.status).toBe(200);
-    expect(axios.post).toBeCalledWith(url, axiosBody, {
+    expect(axios.post).toHaveBeenCalledWith(url, axiosBody, {
       headers: {
         ...axiosHeaders.headers,
         'Message-Id': messageId
@@ -229,7 +229,7 @@ describe('mhs-outbound-client', () => {
     });
 
     // Then
-    expect(axios.post).toBeCalledWith(url, axiosBody, {
+    expect(axios.post).toHaveBeenCalledWith(url, axiosBody, {
       headers: {
         ...axiosHeaders.headers,
         'Correlation-Id': upperCaseConversationId
@@ -252,7 +252,7 @@ describe('mhs-outbound-client', () => {
     });
 
     // Then
-    expect(axios.post).toBeCalledWith(url, axiosBody, {
+    expect(axios.post).toHaveBeenCalledWith(url, axiosBody, {
       headers: {
         ...axiosHeaders.headers,
         'Message-Id': upperCaseMessageId
@@ -323,7 +323,7 @@ describe('mhs-outbound-client', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(axios.post).toBeCalledWith(
+    expect(axios.post).toHaveBeenCalledWith(
       url,
       { payload: stripXMLMessage(pdsRetrievalQuery) },
       axiosHeaders

@@ -1,5 +1,6 @@
 import path from 'path';
 import { readFileSync } from 'fs';
+import axios from 'axios';
 import nock from 'nock';
 
 const FAKE_AUTH_KEY = 'fake-auth-key';
@@ -27,9 +28,16 @@ export const EhrMessageType = {
   coreWithLargeMedicalHistory: 'CoreWithLargeMedicalHistory'
 };
 
-// import the actual uuid package here, as there is a global jest mock for that lib in `src/__mocks__/uuid.js` used by other tests
-const { v4 } = jest.requireActual('uuid');
-const randomUUID = () => v4().toUpperCase();
+// Generate random UUIDs for tests, bypassing the jest mock for uuid package
+const randomUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+    .replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    })
+    .toUpperCase();
+};
 export const generateRandomIdsForTest = () => {
   return {
     conversationId: randomUUID(),
@@ -120,20 +128,59 @@ export const createMockFhirScope = () => {
 
 export const createMockMHSScope = (response = [200, 'OK']) => {
   /*
-  Create a nock scope to mock the outbound MHS adaptor.
-  This function use some special trick to capture the outbound request headers and body.
-  Please keep the function in .reply intact and don't change it to an arrow function.
+  Create a nock scope to mock the outbound MHS adaptor and capture request details.
+  Uses an axios response interceptor to capture the request headers after they're sent,
+  matching how the application logs them (from response.request.headers).
   */
   const body = {};
   const headers = {};
+  let interceptorId;
+
+  // Set up an axios response interceptor to capture the request headers from the response
+  // This matches how the application logs them: response.request.headers
+  interceptorId = axios.interceptors.response.use(
+    axiosResponse => {
+      if (axiosResponse.config.url === MOCK_MHS_OUTBOUND_URL) {
+        // Capture headers from response.request.headers
+        // Try to get headers by iterating keys in case they're in a special object
+        const reqHeaders = axiosResponse.request?.headers;
+        if (reqHeaders) {
+          // First try direct assignment
+          if (typeof reqHeaders === 'object') {
+            Object.assign(headers, reqHeaders);
+            // If that didn't work, try iterating keys
+            if (Object.keys(headers).length === 0 && Object.keys(reqHeaders).length > 0) {
+              for (const key of Object.keys(reqHeaders)) {
+                headers[key] = reqHeaders[key];
+              }
+            }
+          }
+        }
+      }
+      return axiosResponse;
+    },
+    error => {
+      // Also handle error responses
+      return Promise.reject(error);
+    }
+  );
 
   const scope = nock(MOCK_MHS_OUTBOUND_URL)
     .post('')
-    .reply(function (_, requestBody) {
+    .reply(function (uri, requestBody) {
       Object.assign(body, requestBody);
-      Object.assign(headers, this.req.headers);
       return response;
     });
+
+  // Clean up interceptor when scope is done
+  const originalIsDone = scope.isDone.bind(scope);
+  scope.isDone = function () {
+    const result = originalIsDone();
+    if (interceptorId !== undefined) {
+      axios.interceptors.response.eject(interceptorId);
+    }
+    return result;
+  };
 
   scope.outboundBody = body;
   scope.outboundHeaders = headers;
