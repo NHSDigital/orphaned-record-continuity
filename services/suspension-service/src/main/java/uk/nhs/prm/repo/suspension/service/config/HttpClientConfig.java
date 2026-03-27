@@ -5,15 +5,9 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
-import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
-import org.apache.hc.client5.http.ssl.TrustSelfSignedStrategy;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.http.HeaderElement;
-import org.apache.hc.core5.http.config.Registry;
-import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.message.BasicHeaderElementIterator;
-import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 import org.apache.hc.core5.http.HttpHeaders;
@@ -22,10 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
-
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 
 @Configuration
 public class HttpClientConfig {
@@ -43,35 +33,12 @@ public class HttpClientConfig {
             = Integer.getInteger("DEFAULT_KEEP_ALIVE_TIME_MILLIS", DEFAULT_KEEP_ALIVE_TIME_MILLIS);
     //@formatter:on
 
+
     @Bean
     public PoolingHttpClientConnectionManager poolingConnectionManager() {
-        SSLContextBuilder builder = new SSLContextBuilder();
-        try {
-            builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
-        }
-        catch (NoSuchAlgorithmException | KeyStoreException e) {
-            LOGGER.error("Pooling Connection Manager Initialisation failure because of "
-                    + e.getMessage(), e);
-        }
-
-        SSLConnectionSocketFactory sslsf = null;
-        try {
-            sslsf = new SSLConnectionSocketFactory(builder.build());
-        }
-        catch (KeyManagementException | NoSuchAlgorithmException e) {
-            LOGGER.error("Pooling Connection Manager Initialisation failure because of "
-                    + e.getMessage(), e);
-        }
-
-        Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder
-                .<ConnectionSocketFactory> create().register("https", sslsf)
-                .register("http", new PlainConnectionSocketFactory())
+        return PoolingHttpClientConnectionManagerBuilder.create()
+                .setMaxConnTotal(MAX_TOTAL_CONNECTIONS)
                 .build();
-
-        PoolingHttpClientConnectionManager poolingConnectionManager =
-                new PoolingHttpClientConnectionManager(socketFactoryRegistry);
-        poolingConnectionManager.setMaxTotal(MAX_TOTAL_CONNECTIONS);
-        return poolingConnectionManager;
     }
 
     @Bean
