@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
+import software.amazon.awssdk.services.ssm.model.Parameter;
 
 @Slf4j
 @Service
@@ -25,12 +26,10 @@ public class SsmService {
                 .withDecryption(true)
                 .build();
 
-        String parameterValue = ssmClient.getParameter(parameterRequest)
-                .parameter()
-                .value();
+        Parameter parameter = ssmClient.getParameter(parameterRequest).parameter();
 
-        log.info("Value for SSM parameter {} retrieved successfully", parameterName);
+        log.info("Value for SSM parameter {} retrieved successfully. Parameter version is: {}", parameterName, parameter.version());
 
-        return parameterValue;
+        return parameter.value();
     }
 }

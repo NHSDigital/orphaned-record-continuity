@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ContextConfiguration(classes = LocalStackAwsConfig.class)
 @DirtiesContext
 public class MOFUpdateToRepoIntegrationTest {
+    private static final String AUTHORIZATION_HEADER = "Basic c3VzcGVuc2lvbi1zZXJ2aWNlOnRlc3Q=";
 
     @Autowired
     private SqsClient sqs;

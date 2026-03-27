@@ -36,7 +36,6 @@ public class EhrRepoServiceIntegrationTest {
     public static final String CONVERSATION_ID1 = "2431d4ff-f760-4ab9-8cd8-a3fc47846762";
     public static final String CONVERSATION_ID2 = "c184cc19-86e9-4a95-b5b5-2f156900bb3c";
 
-
     @BeforeEach
     public void setUp() {
         stubEhrRepo = initializeWebServer();
