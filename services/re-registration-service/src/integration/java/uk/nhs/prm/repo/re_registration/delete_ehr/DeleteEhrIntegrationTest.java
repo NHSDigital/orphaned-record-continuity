@@ -32,7 +32,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -53,8 +52,8 @@ public class DeleteEhrIntegrationTest {
     @Autowired
     ActiveSuspensionsDb activeSuspensionsDb;
 
-    @Value("${ehrRepoAuthKey}")
-    private String authKey;
+    private static final String EXPECTED_PDS_AUTH_HEADER = "Basic dXNlcm5hbWU6dGVzdA==";
+    private static final String EXPECTED_EHR_REPO_AUTH_HEADER = "test";
 
     @Value("${aws.reRegistrationsQueueName}")
     private String reRegistrationsQueueName;
@@ -120,7 +119,7 @@ public class DeleteEhrIntegrationTest {
 
     private void setPds200SuccessState() {
         stubPdsAdaptor.stubFor(get(urlEqualTo("/suspended-patient-status/" + NHS_NUMBER))
-                .withHeader("Authorization", equalTo("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
+                .withHeader("Authorization", equalTo(EXPECTED_PDS_AUTH_HEADER))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -129,15 +128,15 @@ public class DeleteEhrIntegrationTest {
 
     private void ehrRepository200Response() {
         stubPdsAdaptor.stubFor(delete(urlEqualTo("/patients/" + NHS_NUMBER))
-                .withHeader("Authorization", matching(authKey))
+                .withHeader("Authorization", equalTo(EXPECTED_EHR_REPO_AUTH_HEADER))
                 .willReturn(aResponse()
                         .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
                         .withBody("{\n" +
                                 "  \"data\": {\n" +
                                 "    \"type\": \"patients\",\n" +
                                 "    \"id\": " + NHS_NUMBER + ",\n" +
-                                "    \"conversationIds\":[\"2431d4ff-f760-4ab9-8cd8-a3fc47846762\"," + "\"c184cc19-86e9-4a95-b5b5-2f156900bb3c\"]}}")
-                        .withHeader("Content-Type", "application/json")));
+                                "    \"conversationIds\":[\"2431d4ff-f760-4ab9-8cd8-a3fc47846762\"," + "\"c184cc19-86e9-4a95-b5b5-2f156900bb3c\"]}}")));
     }
 
     private ReRegistrationEvent getReRegistrationEvent() {

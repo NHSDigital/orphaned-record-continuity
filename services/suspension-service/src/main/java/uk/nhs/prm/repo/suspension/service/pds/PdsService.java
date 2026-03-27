@@ -1,5 +1,6 @@
 package uk.nhs.prm.repo.suspension.service.pds;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -8,27 +9,44 @@ import org.springframework.web.client.HttpClientErrorException;
 import uk.nhs.prm.repo.suspension.service.http.RateLimitHttpClient;
 import uk.nhs.prm.repo.suspension.service.model.PdsAdaptorSuspensionStatusResponse;
 import uk.nhs.prm.repo.suspension.service.model.UpdateManagingOrganisationRequest;
+import uk.nhs.prm.repo.suspension.service.service.SsmService;
 
 @Component
 @Slf4j
 public class PdsService {
-
     public static final String SUSPENSION_SERVICE_USERNAME = "suspension-service";
+
     private static final String SUSPENDED_PATIENT = "suspended-patient-status/";
 
-    @Value("${pdsAdaptor.suspensionService.password}")
-    private String suspensionServicePassword;
-
-    @Value("${pdsAdaptor.serviceUrl}")
-    private String serviceUrl;
+    private final SsmService ssmService;
 
     private final PdsAdaptorSuspensionStatusResponseParser responseParser;
 
     private final RateLimitHttpClient httpClient;
 
-    public PdsService(PdsAdaptorSuspensionStatusResponseParser responseParser, RateLimitHttpClient httpClient) {
+    private String serviceUrl;
+
+    private String suspensionServicePasswordSsmParameterName;
+
+    private String suspensionServicePassword;
+
+    public PdsService(
+            SsmService ssmService,
+            PdsAdaptorSuspensionStatusResponseParser responseParser,
+            RateLimitHttpClient httpClient,
+            @Value("${pdsAdaptor.serviceUrl}") String serviceUrl,
+            @Value("${pdsAdaptor.suspensionService.passwordSsmParameterName}") String suspensionServicePasswordSsmParameterName
+    ) {
+        this.ssmService = ssmService;
         this.responseParser = responseParser;
         this.httpClient = httpClient;
+        this.serviceUrl = serviceUrl;
+        this.suspensionServicePasswordSsmParameterName = suspensionServicePasswordSsmParameterName;
+    }
+
+    @PostConstruct
+    private void getAuthPasswordFromSsm() {
+        suspensionServicePassword = ssmService.getValueForParameter(suspensionServicePasswordSsmParameterName);
     }
 
     public PdsAdaptorSuspensionStatusResponse isSuspended(String nhsNumber) {

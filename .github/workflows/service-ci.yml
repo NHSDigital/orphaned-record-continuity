@@ -2,6 +2,8 @@ name: Services CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "services/ehr-repo/**"
       - "services/mesh-forwarder/**"

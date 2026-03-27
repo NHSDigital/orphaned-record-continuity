@@ -12,15 +12,20 @@ import org.springframework.http.ResponseEntity;
 import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.pds.model.PdsAdaptorSuspensionStatusResponse;
+import uk.nhs.prm.repo.re_registration.service.SsmService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.util.ReflectionTestUtils.setField;
 
 @ExtendWith(MockitoExtension.class)
 class PdsAdaptorServiceTest {
+
+    @Mock
+    SsmService ssmService;
 
     @Mock
     HttpClient httpClient;
@@ -38,15 +43,17 @@ class PdsAdaptorServiceTest {
 
     private String pdsAdaptorServiceUrl = "pds-service-url";
     private String authUserName = "username";
-    private String authPassword = "password";
+    private String authPasswordSsmParameterName = "passwordSsmParameterName";
 
     @BeforeEach
     void init() {
-        pdsAdaptorService = new PdsAdaptorService(httpClient, pdsAdaptorServiceUrl, authUserName, authPassword);
+        pdsAdaptorService = new PdsAdaptorService(ssmService, httpClient, pdsAdaptorServiceUrl, authUserName, authPasswordSsmParameterName);
+        // normally retrieved from SSM post-construction, but set directly here for testing
+        setField(pdsAdaptorService, "authPassword", "password");
     }
 
     @Test
-    void shouldCallHttpClientWithCorrectUriAndUserNAmeAndPassword() {
+    void shouldCallHttpClientWithCorrectUriAndUserNameAndPassword() {
         when(httpClient.get(any(), any(), any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
         verify(httpClient).get(url.capture(), username.capture(), password.capture());

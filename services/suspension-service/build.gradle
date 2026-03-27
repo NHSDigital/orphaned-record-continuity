@@ -47,6 +47,7 @@ dependencies {
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:sns'
     implementation 'software.amazon.awssdk:sqs'
+    implementation 'software.amazon.awssdk:ssm'
     implementation 'software.amazon.awssdk:dynamodb'
 
     implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:2.1.4'

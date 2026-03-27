@@ -14,6 +14,7 @@ import uk.nhs.prm.repo.re_registration.config.Tracer;
 import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
+import uk.nhs.prm.repo.re_registration.service.SsmService;
 
 import java.net.MalformedURLException;
 import java.util.Arrays;
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.util.ReflectionTestUtils.setField;
 
 @ExtendWith(MockitoExtension.class)
 class EhrRepoClientTest {
@@ -34,10 +36,12 @@ class EhrRepoClientTest {
     static UUID traceId = UUID.randomUUID();
 
     @Mock
+    SsmService ssmService;
+
+    @Mock
     HttpClient httpClient;
 
     EhrRepoService ehrRepoService;
-
 
     @Captor
     ArgumentCaptor<String> url;
@@ -45,17 +49,18 @@ class EhrRepoClientTest {
     @Captor
     ArgumentCaptor<String> authKey;
 
-
     private String ehrRepoServiceUrl = "ehr-repo-service-url";
-    private String ehrRepoAuthKey = "authKey";
+    private String ehrRepoAuthKeySsmParameterName = "authKeySsmParameterName";
 
     @BeforeEach
     void init() throws MalformedURLException {
-        ehrRepoService = new EhrRepoService(ehrRepoServiceUrl, ehrRepoAuthKey, tracer, reRegistrationAuditPublisher, httpClient);
+        ehrRepoService = new EhrRepoService(tracer, reRegistrationAuditPublisher, ssmService, httpClient, ehrRepoServiceUrl, ehrRepoAuthKeySsmParameterName);
+        // normally retrieved from SSM post-construction, but set directly here for testing
+        setField(ehrRepoService, "ehrRepoAuthKey", "authKey");
     }
 
     @Test
-    void shouldCallHttpClientWithCorrectUriAndUserNAmeAndPassword() throws JsonProcessingException {
+    void shouldCallHttpClientWithCorrectUriAndUserNameAndPassword() throws JsonProcessingException {
         when(httpClient.delete(any(), any())).thenReturn(createDeleteEhrResponseJsonString());
         ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         verify(httpClient).delete(url.capture(), authKey.capture());

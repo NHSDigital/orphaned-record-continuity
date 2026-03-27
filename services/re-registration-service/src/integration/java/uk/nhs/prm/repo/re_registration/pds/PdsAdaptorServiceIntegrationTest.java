@@ -49,6 +49,7 @@ public class PdsAdaptorServiceIntegrationTest {
     public static final String NHS_NUMBER = "1234567890";
     public static final String STATUS_MESSAGE_FOR_WHEN_PATIENT_IS_STILL_SUSPENDED = "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED";
     public static final String STATUS_MESSAGE_FOR_WHEN_PDS_RETURNS_4XX_ERROR = "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR";
+    private static final String EXPECTED_PDS_AUTH_HEADER = "Basic dXNlcm5hbWU6dGVzdA==";
 
     @Autowired
     private SqsClient sqs;
@@ -136,7 +137,7 @@ public class PdsAdaptorServiceIntegrationTest {
 
     private void setPds200SuccessState(String startingState, int priority, String nhsNumber) {
         stubPdsAdaptor.stubFor(get(urlEqualTo("/suspended-patient-status/" + nhsNumber)).atPriority(priority)
-                .withHeader("Authorization", equalTo("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
+                .withHeader("Authorization", equalTo(EXPECTED_PDS_AUTH_HEADER))
                 .inScenario("Retry Scenario")
                 .whenScenarioStateIs(startingState)
                 .willReturn(aResponse()
@@ -147,7 +148,7 @@ public class PdsAdaptorServiceIntegrationTest {
 
     private void setPdsErrorState(String startingState, String finishedState, int priority, String nhsNumber, int statusCode) {
         stubPdsAdaptor.stubFor(get(urlEqualTo("/suspended-patient-status/" + nhsNumber)).atPriority(priority)
-                .withHeader("Authorization", equalTo("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
+                .withHeader("Authorization", equalTo(EXPECTED_PDS_AUTH_HEADER))
                 .inScenario("Retry Scenario")
                 .whenScenarioStateIs(startingState)
                 .willReturn(aResponse()
