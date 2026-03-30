@@ -1,4 +1,4 @@
-FROM python:3.9-alpine3.22
+FROM python:3.14-alpine3.23
 
 RUN apk update && \
     apk -u list && \
