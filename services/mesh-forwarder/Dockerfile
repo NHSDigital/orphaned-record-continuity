@@ -22,7 +22,7 @@ COPY . .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN pip install --upgrade pip pipenv setuptools
+RUN pip install --upgrade pip pipenv setuptools==81.0.0
 
 # Install dependencies into the current env instead of creating another venv
 RUN pipenv install --deploy --system
