@@ -22,7 +22,7 @@ COPY . .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN pip install pipenv
+RUN pip install --upgrade pip pipenv setuptools
 
 # Install dependencies into the current env instead of creating another venv
 RUN pipenv install --deploy --system
