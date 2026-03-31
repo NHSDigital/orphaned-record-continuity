@@ -1,5 +1,16 @@
 package uk.nhs.prm.repo.ehrtransferservice.configuration;
 
+import com.amazon.sqs.javamessaging.AmazonSQSExtendedClient;
+import com.amazon.sqs.javamessaging.ExtendedClientConfiguration;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 import jakarta.annotation.PostConstruct;
 import jakarta.jms.ConnectionFactory;
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -25,15 +36,16 @@ import software.amazon.awssdk.services.sns.model.CreateTopicRequest;
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse;
 import software.amazon.awssdk.services.sns.model.SubscribeRequest;
 import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
-import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
-import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
+import software.amazon.payloadoffloading.S3BackedPayloadStore;
+import software.amazon.payloadoffloading.S3Dao;
+import software.amazon.sns.AmazonSNSExtendedClient;
+import software.amazon.sns.SNSExtendedClientConfiguration;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static jakarta.jms.Session.CLIENT_ACKNOWLEDGE;
+import static javax.jms.Session.CLIENT_ACKNOWLEDGE;
 import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.TransferTableAttribute.*;
 
 @TestConfiguration
@@ -43,7 +55,7 @@ public class LocalStackAwsConfig {
     private S3Client s3Client;
 
     @Autowired
-    private SqsClient sqsClient;
+    private AmazonSQSAsync amazonSQSAsync;
 
     @Autowired
     private DynamoDbClient dynamoDbClient;
@@ -110,24 +122,17 @@ public class LocalStackAwsConfig {
     private static final long DYNAMO_WRITE_CAPACITY_UNITS = 5L;
 
     @Bean
-    public static SqsClient sqsClient(
-            @Value("${localstack.url}") String localstackUrl,
-            @Value("${aws.region}") String region
-    ) throws URISyntaxException {
+    public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) throws URISyntaxException {
         return SqsClient.builder()
-                .credentialsProvider(() -> AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG"))
+                .credentialsProvider((()-> AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
                 .endpointOverride(new URI(localstackUrl))
-                .region(Region.of(region))
                 .build();
     }
 
     @Bean
-    public JmsListenerContainerFactory<?> myFactory(
-            ConnectionFactory connectionFactory
-    ) {
+    public JmsListenerContainerFactory<?> myFactory() {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setSessionAcknowledgeMode(CLIENT_ACKNOWLEDGE);
-        factory.setConnectionFactory(connectionFactory);
         return factory;
     }
 
@@ -141,13 +146,22 @@ public class LocalStackAwsConfig {
     }
 
     @Bean
-    public static S3Client s3Client(
-            @Value("${localstack.url}") String localstackUrl,
-            @Value("${aws.region}") String region
-    ) {
+    public AmazonS3 amazonS3(@Value("${localstack.url}") String localstackUrl) {
+        return AmazonS3ClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
+                .build();
+    }
+
+    // TODO: this S3Client bean is used to setup large message bucket only.
+    // the real dependency used in code is the one above (AmazonS3 / v1).
+    // Therefore: find a way to create the bucket - setting GrantFullControl using
+    // the class above, then get rid of this S3Client / v2.
+    @Bean
+    public static S3Client s3Client(@Value("${localstack.url}") String localstackUrl) {
         return S3Client.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.of(region))
+                .region(Region.EU_WEST_2)
                 .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
                     @Override
                     public String accessKeyId() {
@@ -171,13 +185,36 @@ public class LocalStackAwsConfig {
     }
 
     @Bean
-    public static SnsClient snsClient(
-            @Value("${localstack.url}") String localstackUrl,
-            @Value("${aws.region}") String region
-    ) {
+    public static AmazonSQSAsync amazonSQSAsync(@Value("${localstack.url}") String localstackUrl) {
+        return AmazonSQSAsyncClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
+                .build();
+    }
+
+    @Bean
+    public static AmazonSQSExtendedClient s3SupportedSqsClient(AmazonSQSAsync sqsClient, AmazonS3 amazonS3, @Value("${aws.sqsLargeMessageBucketName}") String sqsLargeMessageBucketName) {
+        return new AmazonSQSExtendedClient(sqsClient, new ExtendedClientConfiguration().withPayloadSupportEnabled(amazonS3, sqsLargeMessageBucketName, true));
+    }
+
+    @Bean
+    public static AmazonSNS amazonSNS(@Value("${localstack.url}") String localstackUrl) {
+        return AmazonSNSClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG")))
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(localstackUrl, "eu-west-2"))
+                .build();
+    }
+
+    @Bean
+    public static AmazonSNSExtendedClient s3SupportedSnsClient(AmazonSNS amazonSNS, AmazonS3 amazonS3, @Value("${aws.sqsLargeMessageBucketName}") String sqsLargeMessageBucketName) {
+        return new AmazonSNSExtendedClient(amazonSNS, new SNSExtendedClientConfiguration(), new S3BackedPayloadStore(new S3Dao(amazonS3), sqsLargeMessageBucketName));
+    }
+
+    @Bean
+    public static SnsClient snsClient(@Value("${localstack.url}") String localstackUrl) {
         return SnsClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.of(region))
+                .region(Region.EU_WEST_2)
                 .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
                     @Override
                     public String accessKeyId() {
@@ -193,13 +230,10 @@ public class LocalStackAwsConfig {
     }
 
     @Bean
-    public static DynamoDbClient dynamoDbClient(
-            @Value("${localstack.url}") String localstackUrl,
-            @Value("${aws.region}") String region
-    ) {
+    public static DynamoDbClient dynamoDbClient(@Value("${localstack.url}") String localstackUrl) {
         return DynamoDbClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.of(region))
+                .region(Region.EU_WEST_2)
                 .credentialsProvider(
                         StaticCredentialsProvider.create(new AwsCredentials() {
                             @Override
@@ -223,28 +257,51 @@ public class LocalStackAwsConfig {
     }
 
     private void setUpQueueAndTopics() {
-        createQueue(repoIncomingQueueName);
+        amazonSQSAsync.createQueue(repoIncomingQueueName);
 
-        createSnsTopic("test_splunk_uploader_topic");
+        var fragmentQueue = amazonSQSAsync.createQueue(largeMessageFragmentsQueueName);
+        var fragmentsTopic = snsClient.createTopic(CreateTopicRequest.builder().name("test_large_message_fragments_topic").build());
+        createSnsTestReceiverSubscription(fragmentsTopic, getQueueArn(fragmentQueue.getQueueUrl()));
 
-        createQueueAndSnsReceiverSubscription(transferCompleteQueueName, "test_transfer_complete_topic");
-        createQueueAndSnsReceiverSubscription(largeEhrQueueName, "test_large_ehr_topic");
-        createQueueAndSnsReceiverSubscription(positiveAcksQueueName, "test_positive_acks_topic");
-        createQueueAndSnsReceiverSubscription(parsingDlqQueueName, "test_dlq_topic");
-        createQueueAndSnsReceiverSubscription(ehrCompleteQueueName, "test_ehr_complete_topic");
-        createQueueAndSnsReceiverSubscription(nackInternalQueueName, "test_negative_acks_topic");
-        createQueueAndSnsReceiverSubscription("ehr_in_unhandled_queue", "test_ehr_in_unhandled_topic");
+        var transferCompleteQueue = amazonSQSAsync.createQueue(transferCompleteQueueName);
+        var transferCompleteTopic = snsClient.createTopic(CreateTopicRequest.builder().name("test_transfer_complete_topic").build());
+        createSnsTestReceiverSubscription(transferCompleteTopic, getQueueArn(transferCompleteQueue.getQueueUrl()));
 
-        createQueueAndObservabilityQueueAndSnsReceiverSubscriptions(
-                largeMessageFragmentsQueueName,
-                largeMessageFragmentsObservabilityQueueName,
-                "test_large_message_fragments_topic");
+        var fragmentObservabilityQueue = amazonSQSAsync.createQueue(largeMessageFragmentsObservabilityQueueName);
+        createSnsTestReceiverSubscription(fragmentsTopic, getQueueArn(fragmentObservabilityQueue.getQueueUrl()));
 
-        createQueueAndObservabilityQueueAndSnsReceiverSubscriptions(
-                smallEhrQueueName,
-                smallEhrObservabilityQueueName,
-                "test_small_ehr_topic"
-        );
+        var smallEhrQueue = amazonSQSAsync.createQueue(smallEhrQueueName);
+        var smallEhrTopic = snsClient.createTopic(CreateTopicRequest.builder().name("test_small_ehr_topic").build());
+        createSnsTestReceiverSubscription(smallEhrTopic, getQueueArn(smallEhrQueue.getQueueUrl()));
+
+        var smallEhrObservabilityQueue = amazonSQSAsync.createQueue(smallEhrObservabilityQueueName);
+        createSnsTestReceiverSubscription(smallEhrTopic, getQueueArn(smallEhrObservabilityQueue.getQueueUrl()));
+
+        var largeEhrQueue = amazonSQSAsync.createQueue(largeEhrQueueName);
+        var largeEhrTopic = snsClient.createTopic(CreateTopicRequest.builder().name("test_large_ehr_topic").build());
+        createSnsTestReceiverSubscription(largeEhrTopic, getQueueArn(largeEhrQueue.getQueueUrl()));
+
+        var positiveAcksTopic = snsClient.createTopic(CreateTopicRequest.builder().name("test_positive_acks_topic").build());
+        var positiveAcksQueue = amazonSQSAsync.createQueue(positiveAcksQueueName);
+        createSnsTestReceiverSubscription(positiveAcksTopic, getQueueArn(positiveAcksQueue.getQueueUrl()));
+
+        var parsingDlqTopic = snsClient.createTopic(CreateTopicRequest.builder().name("test_dlq_topic").build());
+        var parsingDlqQueue = amazonSQSAsync.createQueue(parsingDlqQueueName);
+        createSnsTestReceiverSubscription(parsingDlqTopic, getQueueArn(parsingDlqQueue.getQueueUrl()));
+
+        var ehrCompleteQueue = amazonSQSAsync.createQueue(ehrCompleteQueueName);
+        var ehrCompleteTopic = snsClient.createTopic(CreateTopicRequest.builder().name("test_ehr_complete_topic").build());
+        createSnsTestReceiverSubscription(ehrCompleteTopic, getQueueArn(ehrCompleteQueue.getQueueUrl()));
+
+        var nackTopic = snsClient.createTopic(CreateTopicRequest.builder().name("test_negative_acks_topic").build());
+        var nackQueue = amazonSQSAsync.createQueue(nackInternalQueueName);
+        createSnsTestReceiverSubscription(nackTopic, getQueueArn(nackQueue.getQueueUrl()));
+
+        var ehrInUnhandledTopic = snsClient.createTopic(CreateTopicRequest.builder().name("test_ehr_in_unhandled_topic").build());
+        var ehrInUnhandledObservabilityQueue = amazonSQSAsync.createQueue("ehr_in_unhandled_queue");
+        createSnsTestReceiverSubscription(ehrInUnhandledTopic, getQueueArn(ehrInUnhandledObservabilityQueue.getQueueUrl()));
+
+        snsClient.createTopic(CreateTopicRequest.builder().name("test_splunk_uploader_topic").build());
     }
 
     private void setupS3Bucket() {
@@ -361,42 +418,6 @@ public class LocalStackAwsConfig {
         waiter.waitUntilTableNotExists(tableRequest);
     }
 
-    private void createQueueAndSnsReceiverSubscription(String queueName, String snsName) {
-        String queueUrl = createQueue(queueName);
-        CreateTopicResponse topic = createSnsTopic(snsName);
-        createSnsTestReceiverSubscription(topic, getQueueArn(queueUrl));
-    }
-
-    private void createQueueAndObservabilityQueueAndSnsReceiverSubscriptions(
-            String queueName,
-            String observabilityQueueName,
-            String snsName
-    ) {
-        String queueUrl = createQueue(queueName);
-        String observabilityQueueUrl = createQueue(observabilityQueueName);
-
-        CreateTopicResponse topic = createSnsTopic(snsName);
-
-        createSnsTestReceiverSubscription(topic, getQueueArn(queueUrl));
-        createSnsTestReceiverSubscription(topic, getQueueArn(observabilityQueueUrl));
-    }
-
-    private String createQueue(String queueName) {
-        CreateQueueRequest createQueueRequest = CreateQueueRequest.builder()
-                .queueName(queueName)
-                .build();
-
-        return sqsClient.createQueue(createQueueRequest).queueUrl();
-    }
-
-    private CreateTopicResponse createSnsTopic(String snsName) {
-        CreateTopicRequest createTopicRequest = CreateTopicRequest.builder()
-                .name(snsName)
-                .build();
-
-        return snsClient.createTopic(createTopicRequest);
-    }
-
     private void createSnsTestReceiverSubscription(CreateTopicResponse topic, String queueArn) {
         final Map<String, String> attributes = new HashMap<>();
         attributes.put("RawMessageDelivery", "True");
@@ -410,10 +431,7 @@ public class LocalStackAwsConfig {
         snsClient.subscribe(subscribeRequest);
     }
     private String getQueueArn(String queueUrl) {
-        GetQueueAttributesRequest request = GetQueueAttributesRequest.builder()
-                .queueUrl(queueUrl)
-                .attributeNames(QueueAttributeName.QUEUE_ARN)
-                .build();
-        return sqsClient.getQueueAttributes(request).attributes().get(QueueAttributeName.QUEUE_ARN);
+        var queueAttributes = amazonSQSAsync.getQueueAttributes(queueUrl, List.of("QueueArn"));
+        return queueAttributes.getAttributes().get("QueueArn");
     }
 }
