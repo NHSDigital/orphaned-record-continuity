@@ -1,5 +1,7 @@
 package uk.nhs.prm.repo.ehrtransferservice.config;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,5 +25,10 @@ public class S3ClientSpringConfiguration {
                 .region(region)
                 .credentialsProvider(awsCredentialsProvider)
                 .build();
+    }
+
+    @Bean
+    public AmazonS3 amazonS3ClientForSnsExtended() {
+        return AmazonS3ClientBuilder.standard().withRegion(awsRegion).build();
     }
 }

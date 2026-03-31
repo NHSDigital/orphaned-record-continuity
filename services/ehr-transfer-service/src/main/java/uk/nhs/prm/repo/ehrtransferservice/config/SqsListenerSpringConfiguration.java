@@ -4,7 +4,8 @@ import com.amazon.sqs.javamessaging.ProviderConfiguration;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazon.sqs.javamessaging.SQSSession;
-import software.amazon.awssdk.services.sqs.SqsClient;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,8 +26,9 @@ import uk.nhs.prm.repo.ehrtransferservice.repo_incoming.RepoIncomingEventListene
 import uk.nhs.prm.repo.ehrtransferservice.repo_incoming.RepoIncomingEventParser;
 import uk.nhs.prm.repo.ehrtransferservice.repo_incoming.RepoIncomingService;
 
-import jakarta.jms.JMSException;
-import jakarta.jms.Session;
+import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
+import javax.jms.Session;
 
 @Configuration
 @RequiredArgsConstructor
@@ -58,8 +60,13 @@ public class SqsListenerSpringConfiguration {
     private String negativeAckQueueName;
 
     @Bean
-    public SQSConnection createConnection(SqsClient sqsClient) throws JMSException {
-        SQSConnectionFactory connectionFactory = new SQSConnectionFactory(new ProviderConfiguration(), sqsClient);
+    public AmazonSQSAsync amazonSQSAsync() {
+        return AmazonSQSAsyncClientBuilder.defaultClient();
+    }
+
+    @Bean
+    public SQSConnection createConnection(AmazonSQSAsync amazonSQSAsync) throws JMSException {
+        var connectionFactory = new SQSConnectionFactory(new ProviderConfiguration(), amazonSQSAsync);
         return connectionFactory.createConnection();
     }
 
@@ -68,7 +75,7 @@ public class SqsListenerSpringConfiguration {
         Session session = getSession(connection);
 
         log.info("repo incoming queue name : {}", repoIncomingQueueName);
-        var incomingQueueConsumer = session.createConsumer(session.createQueue(repoIncomingQueueName));
+        MessageConsumer incomingQueueConsumer = session.createConsumer(session.createQueue(repoIncomingQueueName));
         incomingQueueConsumer.setMessageListener(new RepoIncomingEventListener(tracer, repoIncomingService, repoIncomingEventParser));
 
         connection.start();

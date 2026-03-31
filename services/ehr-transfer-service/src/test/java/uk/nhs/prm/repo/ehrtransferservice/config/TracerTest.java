@@ -7,7 +7,7 @@ import org.slf4j.MDC;
 import uk.nhs.prm.repo.ehrtransferservice.logging.UpdateableTraceContext;
 import uk.nhs.prm.repo.ehrtransferservice.logging.Tracer;
 
-import jakarta.jms.JMSException;
+import javax.jms.JMSException;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
