@@ -4,10 +4,10 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 import software.amazon.awssdk.services.sns.model.PublishResponse;
+import software.amazon.sns.AmazonSNSExtendedClient;
 import uk.nhs.prm.repo.ehrtransferservice.logging.Tracer;
 
 import java.util.HashMap;
@@ -17,7 +17,7 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class MessagePublisher {
-    private final SnsClient snsClient;
+    private final AmazonSNSExtendedClient snsExtendedClient;
     private final Tracer tracer;
 
     public void sendMessage(String topicArn, String message) {
@@ -27,7 +27,7 @@ public class MessagePublisher {
     public void sendMessage(String topicArn, String message, Map<String, String> attributes) {
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
         messageAttributes.put("traceId", getMessageAttributeValue(tracer.getTraceId()));
-        if (attributes != null && attributes.size() > 0) {
+        if (attributes != null && !attributes.isEmpty()) {
             attributes.forEach((key, value) -> messageAttributes.put(key, getMessageAttributeValue(value)));
         }
 
@@ -37,7 +37,7 @@ public class MessagePublisher {
                 .topicArn(topicArn)
                 .build();
 
-        PublishResponse response = snsClient.publish(request);
+        PublishResponse response = snsExtendedClient.publish(request);
         String[] topicAttributes = topicArn.split(":");
         log.info("PUBLISHED: message to {} topic. Published SNS message id: {}", topicAttributes[topicAttributes.length - 1], response.messageId());
     }

@@ -1,5 +1,7 @@
 package uk.nhs.prm.repo.ehrtransferservice.configuration;
 
+import com.amazon.sqs.javamessaging.AmazonSQSExtendedClient;
+import com.amazon.sqs.javamessaging.ExtendedClientConfiguration;
 import jakarta.annotation.PostConstruct;
 import jakarta.jms.ConnectionFactory;
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -9,13 +11,22 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.config.JmsListenerContainerFactory;
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
+import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
+import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
+import software.amazon.awssdk.services.dynamodb.model.KeyType;
+import software.amazon.awssdk.services.dynamodb.model.Projection;
+import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
+import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.waiters.DynamoDbWaiter;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -28,16 +39,30 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
+import software.amazon.payloadoffloading.S3BackedPayloadStore;
+import software.amazon.payloadoffloading.S3Dao;
+import software.amazon.sns.AmazonSNSExtendedClient;
+import software.amazon.sns.SNSExtendedClientConfiguration;
 
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static jakarta.jms.Session.CLIENT_ACKNOWLEDGE;
-import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.TransferTableAttribute.*;
+import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.TransferTableAttribute.INBOUND_CONVERSATION_ID;
+import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.TransferTableAttribute.LAYER;
+import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.TransferTableAttribute.NHS_NUMBER;
+import static uk.nhs.prm.repo.ehrtransferservice.database.enumeration.TransferTableAttribute.OUTBOUND_CONVERSATION_ID;
 
 @TestConfiguration
 public class LocalStackAwsConfig {
+    private static final Region LOCALSTACK_REGION = Region.EU_WEST_2;
+
+    private static final StaticCredentialsProvider LOCALSTACK_CREDENTIALS =
+            StaticCredentialsProvider.create(AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG"));
 
     @Autowired
     private S3Client s3Client;
@@ -110,21 +135,7 @@ public class LocalStackAwsConfig {
     private static final long DYNAMO_WRITE_CAPACITY_UNITS = 5L;
 
     @Bean
-    public static SqsClient sqsClient(
-            @Value("${localstack.url}") String localstackUrl,
-            @Value("${aws.region}") String region
-    ) throws URISyntaxException {
-        return SqsClient.builder()
-                .credentialsProvider(() -> AwsBasicCredentials.create("LSIAQAAAAAAVNCBMPNSG", "LSIAQAAAAAAVNCBMPNSG"))
-                .endpointOverride(new URI(localstackUrl))
-                .region(Region.of(region))
-                .build();
-    }
-
-    @Bean
-    public JmsListenerContainerFactory<?> myFactory(
-            ConnectionFactory connectionFactory
-    ) {
+    public JmsListenerContainerFactory<?> myFactory(ConnectionFactory connectionFactory) {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setSessionAcknowledgeMode(CLIENT_ACKNOWLEDGE);
         factory.setConnectionFactory(connectionFactory);
@@ -140,25 +151,34 @@ public class LocalStackAwsConfig {
         return activeMQConnectionFactory;
     }
 
+    private String failoverUrl() {
+        return String.format("failover:(%s,%s)%s", amqEndpoint1, amqEndpoint2, randomOption);
+    }
+
     @Bean
-    public static S3Client s3Client(
-            @Value("${localstack.url}") String localstackUrl,
-            @Value("${aws.region}") String region
-    ) {
+    public static SnsClient snsClient(@Value("${localstack.url}") String localstackUrl) {
+        return SnsClient.builder()
+                .endpointOverride(URI.create(localstackUrl))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
+                .build();
+    }
+
+    @Bean
+    public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl){
+        return SqsClient.builder()
+                .endpointOverride(URI.create(localstackUrl))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
+                .build();
+    }
+
+    @Bean
+    public static S3Client s3Client(@Value("${localstack.url}") String localstackUrl) {
         return S3Client.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.of(region))
-                .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
-                    @Override
-                    public String accessKeyId() {
-                        return "LSIAQAAAAAAVNCBMPNSG";
-                    }
-
-                    @Override
-                    public String secretAccessKey() {
-                        return "LSIAQAAAAAAVNCBMPNSG";
-                    }
-                }))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
                 .serviceConfiguration(
                         S3Configuration.builder()
                                 .pathStyleAccessEnabled(true)
@@ -166,52 +186,37 @@ public class LocalStackAwsConfig {
                 .build();
     }
 
-    private String failoverUrl() {
-        return String.format("failover:(%s,%s)%s", amqEndpoint1, amqEndpoint2, randomOption);
+    @Bean
+    public static AmazonSNSExtendedClient snsExtendedClient(
+            SnsClient snsClient,
+            S3Client s3Client,
+            @Value("${aws.sqsLargeMessageBucketName}") String sqsLargeMessageBucketName
+    ) {
+        return new AmazonSNSExtendedClient(
+                snsClient,
+                new SNSExtendedClientConfiguration().withPayloadSupportEnabled(s3Client, sqsLargeMessageBucketName),
+                new S3BackedPayloadStore(new S3Dao(s3Client), sqsLargeMessageBucketName)
+        );
     }
 
     @Bean
-    public static SnsClient snsClient(
-            @Value("${localstack.url}") String localstackUrl,
-            @Value("${aws.region}") String region
+    public static AmazonSQSExtendedClient sqsExtendedClient(
+            SqsClient sqsClient,
+            S3Client s3Client,
+            @Value("${aws.sqsLargeMessageBucketName}") String sqsLargeMessageBucketName
     ) {
-        return SnsClient.builder()
-                .endpointOverride(URI.create(localstackUrl))
-                .region(Region.of(region))
-                .credentialsProvider(StaticCredentialsProvider.create(new AwsCredentials() {
-                    @Override
-                    public String accessKeyId() {
-                        return "LSIAQAAAAAAVNCBMPNSG";
-                    }
-
-                    @Override
-                    public String secretAccessKey() {
-                        return "LSIAQAAAAAAVNCBMPNSG";
-                    }
-                }))
-                .build();
+        return new AmazonSQSExtendedClient(
+                sqsClient,
+                new ExtendedClientConfiguration()
+                        .withPayloadSupportEnabled(s3Client, sqsLargeMessageBucketName, true));
     }
 
     @Bean
-    public static DynamoDbClient dynamoDbClient(
-            @Value("${localstack.url}") String localstackUrl,
-            @Value("${aws.region}") String region
-    ) {
+    public static DynamoDbClient dynamoDbClient(@Value("${localstack.url}") String localstackUrl) {
         return DynamoDbClient.builder()
                 .endpointOverride(URI.create(localstackUrl))
-                .region(Region.of(region))
-                .credentialsProvider(
-                        StaticCredentialsProvider.create(new AwsCredentials() {
-                            @Override
-                            public String accessKeyId() {
-                                return "LSIAQAAAAAAVNCBMPNSG";
-                            }
-
-                            @Override
-                            public String secretAccessKey() {
-                                return "LSIAQAAAAAAVNCBMPNSG";
-                            }
-                        }))
+                .region(LOCALSTACK_REGION)
+                .credentialsProvider(LOCALSTACK_CREDENTIALS)
                 .build();
     }
 

@@ -1,6 +1,7 @@
 package uk.nhs.prm.repo.ehrtransferservice.parsers;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -50,6 +51,7 @@ import static uk.nhs.prm.repo.ehrtransferservice.utils.TestDataLoaderUtility.get
 @ContextConfiguration(classes = LocalStackAwsConfig.class)
 public class ParserBrokerIntegrationTest {
     @Autowired
+    @Qualifier("sqsClient")
     private SqsClient sqs;
 
     @Autowired
@@ -57,9 +59,6 @@ public class ParserBrokerIntegrationTest {
 
     @Autowired
     TransferTrackerDbUtility transferTrackerDbUtility;
-
-    @MockitoBean
-    private EhrRepoService ehrRepoService;
 
     @Value("${activemq.inboundQueue}")
     private String inboundQueue;

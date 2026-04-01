@@ -1,5 +1,6 @@
 package uk.nhs.prm.repo.ehrtransferservice.handler;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,7 @@ public class NegativeAcknowledgmentHandlingIntegrationTest {
     TransferService transferService;
 
     @Autowired
+    @Qualifier("sqsClient")
     private SqsClient sqs;
 
     @Value("${activemq.inboundQueue}")
