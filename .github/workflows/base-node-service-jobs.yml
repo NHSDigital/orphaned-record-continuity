@@ -56,7 +56,7 @@ jobs:
         run: npm install
 
       - name: Start LocalStack
-        uses: LocalStack/setup-localstack@v0.3.0
+        uses: LocalStack/setup-localstack@v0.3.1
         env:
           LOCALSTACK_ACKNOWLEDGE_ACCOUNT_REQUIREMENT: "1" # https://github.com/localstack/setup-localstack/issues/65
         with:
